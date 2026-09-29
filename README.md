@@ -4,6 +4,16 @@ An Android input method for a sales/CS team: canned replies, an invoice builder 
 pulls product names and prices from a catalogue, J&T shipping quotes, pending orders,
 emoji, and a quick calculator reached by holding **Enter**.
 
+> **Start with [`NOTES.md`](NOTES.md)** if you are about to change anything. It holds the
+> context that is not visible from the source: the live backend's real schema, the open
+> security findings, the decision blocking the invoice module, the rules behind the panel
+> system, and which parts have never been run on a device.
+
+### Install without building
+
+A prebuilt APK of the shipped flavor is committed under [`release/`](release/) —
+`SAMAQU-Lite-v1.0.1.apk`. Install that to try the app; build from source to change it.
+
 | | |
 |---|---|
 | Package | `com.samaqu.keyboard.lite` (install this flavor) |

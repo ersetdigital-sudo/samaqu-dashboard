@@ -1,9 +1,13 @@
 # --- Build outputs -----------------------------------------------------------
 .gradle/
 build/
-*.apk
 *.aab
 *.ap_
+
+# APKs are build output, but the shipped one is committed deliberately so a clone
+# has something to install without building a toolchain first. See README.
+*.apk
+!release/*.apk
 
 # --- Machine-specific config -------------------------------------------------
 # local.properties points at this machine's Android SDK. Anyone cloning the repo
