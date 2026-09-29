@@ -10,7 +10,6 @@ import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
 import android.util.AttributeSet
-import android.view.MotionEvent
 import androidx.core.content.ContextCompat
 import com.samaqu.keyboard.R
 
@@ -85,9 +84,13 @@ class SamaQuKeyboardView @JvmOverloads constructor(
     /**
      * Fired when Enter is held down long enough to mean "open the Quick Calculator".
      *
-     * The framework's own long-press hook ([onLongPress]) only ever opens a popup keyboard, so
-     * the timing is tracked here instead - and the tap that follows is left to the IME to
-     * swallow through [enterLongPressAt].
+     * The timing is driven by the IME's press/release callbacks - the framework's own report
+     * of which key the finger is on - rather than by hit-testing coordinates here. Those
+     * callbacks already drive the pressed face above, they carry the key code directly, and
+     * they fire again when the finger slides onto another key, which cancels the hold for free.
+     *
+     * The framework's own [onLongPress] hook is not used as the trigger: it only ever opens a
+     * popup keyboard, and the Enter key has no popup to open.
      */
     var onEnterLongPress: (() -> Unit)? = null
 
@@ -101,40 +104,27 @@ class SamaQuKeyboardView @JvmOverloads constructor(
 
     private val longPressHandler = Handler(Looper.getMainLooper())
 
-    /** Key the finger went down on, or null when it is between keys. */
-    private var heldKey: Keyboard.Key? = null
-
     private val longPressRunnable = Runnable {
-        val key = heldKey ?: return@Runnable
-        if (key.codes.firstOrNull() != CODE_ENTER) return@Runnable
-
         enterLongPressAt = SystemClock.uptimeMillis()
-        // A key that was long-pressed may not get an onRelease (the framework can abort it),
-        // so the pressed face is restored here rather than left stuck in the accent colour.
+        // A key that was held may never get an onRelease (the framework can abort it), so the
+        // pressed face is restored here rather than left stuck in the accent colour.
         setPressedCode(NO_CODE)
         onEnterLongPress?.invoke()
     }
 
-    override fun onTouchEvent(event: MotionEvent): Boolean {
-        when (event.actionMasked) {
-            MotionEvent.ACTION_DOWN -> {
-                heldKey = keyAt(event.x, event.y)
-                if (heldKey?.codes?.firstOrNull() == CODE_ENTER) {
-                    longPressHandler.postDelayed(longPressRunnable, LONG_PRESS_MS)
-                }
-            }
-            MotionEvent.ACTION_MOVE ->
-                // Sliding off the key cancels it, exactly like the framework does.
-                if (heldKey != null && keyAt(event.x, event.y) !== heldKey) abortLongPress()
+    /** Starts the hold timer. Called once, on Enter going down. */
+    fun startEnterLongPress() {
+        longPressHandler.removeCallbacks(longPressRunnable)
+        longPressHandler.postDelayed(longPressRunnable, LONG_PRESS_MS)
+    }
 
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> abortLongPress()
-        }
-        // The framework keeps doing its normal job: press feedback, repeat, tap on release.
-        return super.onTouchEvent(event)
+    /** Cancels the hold timer. Called on key up, on a slide to another key, and on detach. */
+    fun cancelEnterLongPress() {
+        longPressHandler.removeCallbacks(longPressRunnable)
     }
 
     override fun onDetachedFromWindow() {
-        abortLongPress()
+        cancelEnterLongPress()
         super.onDetachedFromWindow()
     }
 
@@ -144,21 +134,6 @@ class SamaQuKeyboardView @JvmOverloads constructor(
      */
     override fun onLongPress(key: Keyboard.Key): Boolean =
         key.codes.firstOrNull() == CODE_ENTER || super.onLongPress(key)
-
-    private fun abortLongPress() {
-        longPressHandler.removeCallbacks(longPressRunnable)
-        heldKey = null
-    }
-
-    /** Key under a point, in this view's own coordinates. */
-    private fun keyAt(x: Float, y: Float): Keyboard.Key? {
-        val keys = keyboard?.keys ?: return null
-        val px = x - paddingLeft
-        val py = y - paddingTop
-        return keys.firstOrNull {
-            px >= it.x && px < it.x + it.width && py >= it.y && py < it.y + it.height
-        }
-    }
 
     override fun onDraw(canvas: Canvas) {
         drawKeyFaces(canvas)

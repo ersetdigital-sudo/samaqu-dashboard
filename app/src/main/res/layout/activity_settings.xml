@@ -188,5 +188,40 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="@string/btn_open_dashboard" />
+
+        <!--
+          A long press has no visible affordance on a keyboard, so the one place the CS is
+          guaranteed to read about it is here rather than on a key that cannot say so.
+        -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="20dp"
+            android:background="#FFE2E8F0" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:text="@string/tips_section"
+            android:textColor="#FF1E293B"
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:text="@string/tip_calculator"
+            android:textColor="#FF475569"
+            android:textSize="13sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/tip_product_picker"
+            android:textColor="#FF475569"
+            android:textSize="13sp" />
     </LinearLayout>
 </ScrollView>

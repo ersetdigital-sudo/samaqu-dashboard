@@ -1293,11 +1293,21 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         val view = keyboardView ?: return
         // Tactile tick plus a visible pressed face, so every tap registers instantly.
         view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-        (view as? SamaQuKeyboardView)?.setPressedCode(primaryCode)
+        val keys = view as? SamaQuKeyboardView ?: return
+        keys.setPressedCode(primaryCode)
+
+        // Holding Enter is what opens the Quick Calculator. The clock starts here - on the
+        // framework's own report that Enter went down - so it cannot start for any other key,
+        // and a plain tap always ends before the timer does.
+        if (primaryCode == SamaQuKeyboardView.CODE_ENTER) keys.startEnterLongPress()
     }
 
     override fun onRelease(primaryCode: Int) {
-        (keyboardView as? SamaQuKeyboardView)?.setPressedCode(SamaQuKeyboardView.NO_CODE)
+        val keys = keyboardView as? SamaQuKeyboardView ?: return
+        keys.setPressedCode(SamaQuKeyboardView.NO_CODE)
+        // Releasing Enter ends the hold; sliding onto another key reports a release too, so
+        // dragging away cancels the calculator without any coordinate maths of our own.
+        if (primaryCode == SamaQuKeyboardView.CODE_ENTER) keys.cancelEnterLongPress()
     }
 
     /** One toolbar entry, kept as a group so its state can be repainted whole. */

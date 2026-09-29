@@ -86,6 +86,9 @@
     <string name="hint_supabase_anon_key">Supabase anon key (public)</string>
     <string name="hint_supabase_note">Ambil keduanya dari Supabase Dashboard &gt; Project Settings &gt; API. anon key memang kunci publik, aman disimpan di app — yang menentukan data mana yang boleh dibaca adalah Row Level Security di Supabase.</string>
     <string name="btn_save_settings">Simpan &amp; Aktifkan Notifikasi</string>
+    <string name="tips_section">Tips</string>
+    <string name="tip_calculator">Kalkulator cepat — <b>tahan tombol ↵ (Enter)</b> di keyboard selama setengah detik, sampai panel Kalkulator Cepat muncul. Ketuk sekali tetap seperti biasa (menulis baris baru). Ketuk "Masukkan ke Chat" untuk memasukkan hasilnya.</string>
+    <string name="tip_product_picker">Pilih Produk — ketuk tombol <b>Pilih</b> di panel Invoice. Nama, harga, ukuran dan stok diambil langsung dari katalog Supabase.</string>
     <string name="setup_step_title">Langkah Setup Keyboard</string>
     <string name="setup_step_1">1. Aktifkan SAMAQU di pengaturan keyboard</string>
     <string name="btn_open_ime_settings">Buka Pengaturan Keyboard</string>
