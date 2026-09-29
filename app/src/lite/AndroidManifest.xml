@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  "lite" flavor manifest, merged on top of src/main/AndroidManifest.xml.
+
+  Purpose: isolate "App not installed" (Aplikasi tidak terinstal) reports on
+  MIUI/HyperOS. Those ROMs routinely refuse sideloaded APKs that ask for the
+  overlay permission, ship an AccessibilityService, or register a boot receiver.
+
+  Everything removed here would still be present in the prod/dev flavors, so
+  this build is NOT a replacement for them. It keeps the keyboard, the template
+  panel, the invoice panel, the emoji panel and offline caching intact.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Risky permissions removed for this diagnostic build -->
+    <uses-permission
+        android:name="android.permission.SYSTEM_ALERT_WINDOW"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.RECEIVE_BOOT_COMPLETED"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"
+        tools:node="remove" />
+
+    <application>
+        <!-- Accessibility service: a common block reason on MIUI -->
+        <service
+            android:name="com.samaqu.keyboard.ime.SamaQuAccessibility"
+            tools:node="remove" />
+
+        <!-- Overlay toolbar: needs SYSTEM_ALERT_WINDOW + a foreground service -->
+        <service
+            android:name="com.samaqu.keyboard.overlay.OverlayService"
+            tools:node="remove" />
+
+        <!-- Auto-start on boot: flagged as an auto-start risk on MIUI -->
+        <receiver
+            android:name="com.samaqu.keyboard.BootReceiver"
+            tools:node="remove" />
+    </application>
+
+</manifest>

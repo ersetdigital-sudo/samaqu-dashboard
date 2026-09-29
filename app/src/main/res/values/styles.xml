@@ -1,0 +1,40 @@
+<resources>
+    <!--
+      Quick Calculator keys.
+
+      Only visual and touch attributes live in these styles: layout_width / height / weight
+      stay on each key in the layout, so the sizes never depend on how a style is resolved.
+    -->
+    <style name="CalcKey">
+        <item name="android:background">@drawable/calc_key_bg</item>
+        <item name="android:clickable">true</item>
+        <item name="android:focusable">true</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textSize">18sp</item>
+    </style>
+
+    <!-- ÷ × − + -->
+    <style name="CalcKey.Operator">
+        <item name="android:background">@drawable/calc_key_op_bg</item>
+        <item name="android:textColor">@color/brand_purple</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- C and ⌫: the two keys that change a calculation rather than extend it. -->
+    <style name="CalcKey.Action">
+        <item name="android:background">@drawable/calc_key_op_bg</item>
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <!-- = -->
+    <style name="CalcKey.Accent">
+        <item name="android:background">@drawable/calc_key_accent_bg</item>
+        <item name="android:textColor">@color/surface</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+</resources>

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Toolbar entry background.
+  Idle: transparent (just the ripple). Open panel: soft accent pill, driven by
+  the view's selected state — see @color/toolbar_item_bg_color.
+-->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="#1F7C3AED">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/toolbar_item_bg_color" />
+            <corners android:radius="12dp" />
+        </shape>
+    </item>
+</ripple>

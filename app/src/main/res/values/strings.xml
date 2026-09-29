@@ -1,0 +1,186 @@
+<resources>
+    <string name="app_name">SAMAQU Keyboard</string>
+    <string name="ime_label">SAMAQU</string>
+    <string name="settings_label">Pengaturan SAMAQU</string>
+    <string name="dashboard_label">Dashboard SAMAQU</string>
+    <string name="accessibility_label">SAMAQU Auto-Paste</string>
+    <string name="accessibility_desc">SAMAQU memakai akses ini untuk otomatis menempelkan template ke kolom chat.</string>
+    <string name="key_num">123</string>
+
+    <!-- Toolbar IME -->
+    <string name="tab_invoice">Invoice</string>
+    <string name="tab_ongkir">Ongkir</string>
+    <string name="tab_autotext">Auto Text</string>
+    <string name="tab_pending">Pending</string>
+    <string name="tab_dashboard">Dashboard</string>
+    <string name="action_sync">Sync</string>
+    <string name="action_close">✕</string>
+
+    <!-- Panel -->
+    <string name="panel_invoice_title">Buat Invoice</string>
+    <string name="panel_pending_title">Pending — Minta Bukti Transfer</string>
+    <string name="panel_autotext_title">Auto Text</string>
+    <string name="panel_emoji_title">Emoji</string>
+    <string name="panel_ongkir_title">Cek Ongkir</string>
+
+    <!-- Quick Calculator (tahan tombol Enter) -->
+    <string name="panel_calculator_title">Kalkulator Cepat</string>
+    <string name="calc_back_to_letters">⌨ ABC</string>
+    <string name="calc_insert">Masukkan ke Chat</string>
+    <string name="calc_zero">0</string>
+    <string name="calc_div_zero">Tidak bisa dibagi 0</string>
+    <string name="calc_too_large">Angka terlalu besar</string>
+    <string name="calc_no_target">Tidak ada kolom chat yang aktif</string>
+
+    <!-- Emoji panel -->
+    <string name="emoji_back_to_letters">⌨ ABC</string>
+    <string name="emoji_cat_faces">Wajah</string>
+    <string name="emoji_cat_gestures">Isyarat</string>
+    <string name="emoji_cat_business">Bisnis</string>
+    <string name="emoji_cat_symbols">Simbol</string>
+    <string name="btn_generate_send">Generate &amp; Kirim ke Chat</string>
+    <string name="pending_empty_default">Belum ada data order.</string>
+
+    <!-- Panel Cek Ongkir (J&T) -->
+    <string name="hint_kecamatan">Kecamatan</string>
+    <string name="hint_kota">Kota / Kabupaten</string>
+    <string name="hint_berat">Berat (gram)</string>
+    <string name="btn_check_ongkir">Cek Ongkir</string>
+    <string name="ongkir_need_area">Isi kecamatan dan kota/kabupaten tujuan dulu</string>
+    <string name="ongkir_loading">Menghitung ongkir…</string>
+    <string name="ongkir_empty">Tidak ada layanan J&amp;T untuk tujuan itu</string>
+    <string name="ongkir_use">Pakai</string>
+
+    <!-- Field invoice -->
+    <string name="field_buyer">Pembeli</string>
+    <string name="field_product">Produk</string>
+    <string name="field_qty">Qty</string>
+    <string name="field_price">Harga (Rp)</string>
+    <string name="field_ongkir">Ongkir (Rp)</string>
+    <string name="field_payment">No. Rekening</string>
+    <string name="hint_buyer">Nama pembeli</string>
+    <string name="hint_product">Nama produk</string>
+
+    <!-- Pilih produk dari katalog Supabase -->
+    <string name="btn_pick_product">Pilih \u25BE</string>
+    <string name="panel_product_title">Pilih Produk</string>
+    <string name="hint_search_product">Cari produk…</string>
+    <string name="product_all">Semua</string>
+    <string name="product_loading">Memuat katalog produk…</string>
+    <string name="product_empty">Katalog produk kosong. Tekan Sync untuk memuat dari Supabase.</string>
+    <string name="product_no_match">Tidak ada produk yang cocok</string>
+    <string name="product_failed">Gagal memuat produk: %1$s\nKetuk di sini untuk coba lagi</string>
+    <string name="product_back">← Produk</string>
+    <string name="product_stock_total">stok %1$d</string>
+    <string name="product_stock_empty">stok habis</string>
+
+    <!-- Pilih ukuran / varian -->
+    <string name="variant_stock">stok %1$d</string>
+    <string name="variant_sold_out">habis</string>
+    <string name="variant_all_sold_out">Semua ukuran stoknya habis</string>
+    <string name="hint_payment">No. rekening</string>
+
+    <!-- Settings -->
+    <string name="settings_subtitle">Keyboard khusus CS — Auto Text instan</string>
+    <string name="hint_supabase_url">Supabase Project URL</string>
+    <string name="hint_supabase_anon_key">Supabase anon key (public)</string>
+    <string name="hint_supabase_note">Ambil keduanya dari Supabase Dashboard &gt; Project Settings &gt; API. anon key memang kunci publik, aman disimpan di app — yang menentukan data mana yang boleh dibaca adalah Row Level Security di Supabase.</string>
+    <string name="btn_save_settings">Simpan &amp; Aktifkan Notifikasi</string>
+    <string name="setup_step_title">Langkah Setup Keyboard</string>
+    <string name="setup_step_1">1. Aktifkan SAMAQU di pengaturan keyboard</string>
+    <string name="btn_open_ime_settings">Buka Pengaturan Keyboard</string>
+    <string name="setup_step_2">2. Pilih SAMAQU sebagai keyboard aktif</string>
+    <string name="btn_select_ime">Pilih SAMAQU sebagai Keyboard</string>
+    <string name="display_section">Tampilan Keyboard</string>
+    <string name="key_size_label">Ukuran Tombol</string>
+    <string name="key_size_small">Kecil</string>
+    <string name="key_size_normal">Normal</string>
+    <string name="key_size_large">Besar</string>
+    <string name="btn_open_dashboard">Buka Dashboard</string>
+
+    <!-- Dashboard WebView -->
+    <string name="retry">Coba Lagi</string>
+    <string name="dashboard_error_title">Gagal memuat halaman</string>
+    <string name="dashboard_error_detail">Periksa koneksi internet, lalu tekan Coba Lagi.</string>
+    <string name="hint_dashboard_url">URL Dashboard (opsional)</string>
+    <string name="hint_dashboard_url_note">Kosongkan untuk memakai dashboard web bawaan, tempat mengatur template chat &amp; kategori. Ringkasan offline bisa dibuka dari menu Dashboard.</string>
+
+    <!-- Dashboard ringkasan lokal (tanpa login) -->
+    <string name="summary_section">Ringkasan</string>
+    <string name="summary_data_title">Data Auto Text</string>
+    <string name="summary_templates">Template</string>
+    <string name="summary_categories">Kategori</string>
+    <string name="summary_status_title">Status</string>
+    <string name="summary_backend_set">Supabase: %1$s</string>
+    <string name="summary_backend_unset">Supabase: belum diatur</string>
+    <string name="summary_token_set">anon key: terisi</string>
+    <string name="summary_token_unset">anon key: kosong</string>
+    <string name="summary_key_size">Ukuran tombol: %1$s</string>
+    <string name="summary_app_version">Versi aplikasi: %1$s</string>
+    <string name="btn_open_settings">Atur di Pengaturan</string>
+    <string name="summary_web_hint">Buka menu Dashboard untuk mengubah pengaturan atau mengelola template langsung di app.</string>
+    <string name="info_title">Informasi</string>
+    <string name="pending_needs_backend">Tab Pending butuh koneksi ke backend (URL Dashboard + JWT token).\n\nIsi keduanya di Pengaturan untuk memakainya.</string>
+    <string name="btn_overlay_on">Aktifkan Overlay (butuh izin)</string>
+    <string name="btn_overlay_off">Matikan Overlay</string>
+    <string name="settings_saved">Disimpan — ukuran keyboard langsung berlaku</string>
+    <string name="overlay_permission_needed">Izin overlay dibutuhkan untuk menampilkan toolbar mengambang.</string>
+    <string name="overlay_started">Overlay SAMAQU aktif.</string>
+    <string name="overlay_stopped">Overlay SAMAQU dimatikan.</string>
+
+    <!-- Main -->
+    <string name="main_subtitle">Keyboard CS + Auto Text</string>
+
+    <!-- AutoText fragment -->
+    <string name="autotext_empty">Belum ada template. Tekan Sync dari keyboard untuk mengunduh.</string>
+    <string name="copied">Disalin!</string>
+
+    <!-- Notification -->
+    <string name="channel_fg">SAMAQU</string>
+    <string name="channel_orders">Order Baru</string>
+    <string name="notif_fg_title">SAMAQU aktif</string>
+    <string name="notif_fg_text">Tap kolom chat untuk mulai</string>
+    <string name="notif_orders_title">%1$d order baru masuk!</string>
+    <string name="notif_orders_text">Buka dashboard untuk lihat detail</string>
+
+    <!-- Bottom nav -->
+    <string name="nav_pending">Pending</string>
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_ongkir">Cek Ongkir</string>
+
+    <!-- Messages -->
+    <string name="msg_jwt_missing">Supabase belum diatur di Settings</string>
+    <string name="msg_no_pending">Tidak ada order pending 🎉</string>
+    <string name="msg_load_failed">Gagal memuat: %1$s</string>
+    <string name="ongkir_failed">Gagal cek ongkir: %1$s</string>
+    <string name="toast_copied_paste">✓ Disalin! Tahan lalu Paste di chat</string>
+
+    <!-- Dashboard: kelola template -->
+    <string name="manage_templates_label">Kelola Template</string>
+    <string name="btn_manage_templates">Kelola Template &amp; Kategori</string>
+    <string name="action_summary">Ringkasan &amp; Status</string>
+    <string name="action_web_dashboard">Dashboard Web</string>
+    <string name="btn_add_template">Tambah Template</string>
+    <string name="btn_add_category">Tambah Kategori</string>
+    <string name="btn_rename_category">Ubah Nama</string>
+    <string name="btn_delete_category">Hapus Kategori</string>
+    <string name="btn_edit">Ubah</string>
+    <string name="btn_delete">Hapus</string>
+    <string name="btn_save">Simpan</string>
+    <string name="btn_cancel">Batal</string>
+    <string name="hint_template_text">Teks template</string>
+    <string name="hint_category_name">Nama kategori</string>
+    <string name="dialog_add_template">Template baru</string>
+    <string name="dialog_edit_template">Ubah Template</string>
+    <string name="dialog_add_category">Kategori baru</string>
+    <string name="dialog_rename_category">Ubah Nama Kategori</string>
+    <string name="confirm_delete_template">Hapus template ini dari Supabase?</string>
+    <string name="confirm_delete_category">Hapus kategori ini beserta semua template di dalamnya?</string>
+    <string name="manage_empty_templates">Belum ada template di kategori ini. Tekan tombol di bawah untuk menambah.</string>
+    <string name="manage_empty_categories">Belum ada kategori. Tekan Tambah Kategori dulu.</string>
+    <string name="manage_template_count">%1$d template</string>
+    <string name="toast_saved">Tersimpan ke Supabase ✓</string>
+    <string name="toast_deleted">Terhapus ✓</string>
+    <string name="toast_write_failed">Gagal menyimpan: %1$s</string>
+    <string name="toast_name_required">Nama / teks tidak boleh kosong</string>
+</resources>

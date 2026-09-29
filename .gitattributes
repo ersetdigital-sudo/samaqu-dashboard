@@ -1,0 +1,32 @@
+# Let git decide text/binary, then normalize text to LF in the repository so a
+# clone on macOS, Linux or Windows does not produce a whole-file diff.
+* text=auto
+
+*.kt     text
+*.java   text
+*.xml    text
+*.kts    text
+*.properties text
+*.md     text
+*.sql    text
+*.json   text
+*.html   text
+*.js     text
+*.css    text
+
+# Windows batch scripts are executed by cmd and need CRLF.
+*.bat    text eol=crlf
+*.cmd    text eol=crlf
+
+# Binaries
+*.png    binary
+*.jpg    binary
+*.jpeg   binary
+*.webp   binary
+*.gif    binary
+*.ico    binary
+*.ttf    binary
+*.otf    binary
+*.jar    binary
+*.apk    binary
+*.keystore binary

@@ -1,0 +1,49 @@
+<resources>
+    <!--
+      SAMAQU palette.
+
+      One accent (purple) plus neutral greys for everything else, so the accent
+      is the only thing that reads as "SamaQu" and the keyboard stops looking
+      like a mix of blue, green and grey.
+
+      Naming note: "brand_blue" / "brand_blue_dark" are historical token names
+      referenced by activity_main, activity_dashboard, activity_settings and the
+      overlay layouts. The names are kept (renaming them would touch every one of
+      those files) but the values are now the purple accent.
+    -->
+    <color name="brand_blue">#FF7C3AED</color>
+    <color name="brand_blue_dark">#FF5B21B6</color>
+    <!-- Kept for the success/synced state only — it is a status colour, not the brand. -->
+    <color name="brand_accent">#FF16A34A</color>
+
+    <color name="brand_purple">#FF7C3AED</color>
+    <color name="brand_purple_dark">#FF5B21B6</color>
+    <color name="brand_purple_tint">#FFEDE9FE</color>
+    <color name="brand_purple_soft">#FFF8F6FF</color>
+
+    <!-- Neutral text + surfaces -->
+    <color name="text_primary">#FF1F2937</color>
+    <color name="text_secondary">#FF6B7280</color>
+    <color name="text_muted">#FF9CA3AF</color>
+    <color name="divider">#FFE8E9EE</color>
+    <color name="surface">#FFFFFFFF</color>
+    <color name="surface_soft">#FFF7F8FA</color>
+    <color name="success">#FF16A34A</color>
+    <color name="danger">#FFDC2626</color>
+
+    <color name="bg_light">#FFF5F6F8</color>
+
+    <!--
+      Keyboard deck: flat white keys on a neutral grey deck, no key borders.
+      Key faces and the pressed state are painted by SamaQuKeyboardView, so the
+      pressed colour has to be a real key colour, not just a ripple.
+    -->
+    <color name="keyboard_bg">#FFF1F2F6</color>
+    <color name="key_face">#FFFFFFFF</color>
+    <color name="key_pressed">#FFEDE9FE</color>
+    <color name="key_text">#FF1F2937</color>
+    <color name="key_preview_bg">#FFFFFFFF</color>
+
+    <color name="nav_selected">#FF7C3AED</color>
+    <color name="nav_unselected">#FF94A3B8</color>
+</resources>

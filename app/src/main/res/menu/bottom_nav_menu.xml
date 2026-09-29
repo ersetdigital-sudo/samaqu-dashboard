@@ -1,0 +1,22 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_invoice"
+        android:icon="@drawable/ic_tb_invoice"
+        android:title="@string/tab_invoice" />
+    <item
+        android:id="@+id/nav_ongkir"
+        android:icon="@drawable/ic_tb_ongkir"
+        android:title="@string/nav_ongkir" />
+    <item
+        android:id="@+id/nav_autotext"
+        android:icon="@drawable/ic_tb_autotext"
+        android:title="@string/tab_autotext" />
+    <item
+        android:id="@+id/nav_pending"
+        android:icon="@drawable/ic_tb_pending"
+        android:title="@string/nav_pending" />
+    <item
+        android:id="@+id/nav_dashboard"
+        android:icon="@drawable/ic_tb_dashboard"
+        android:title="@string/nav_dashboard" />
+</menu>

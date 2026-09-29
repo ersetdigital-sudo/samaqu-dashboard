@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Toolbar entry background colour.
+
+  Driven by the view's selected state (SamaQuIME sets `isSelected` on the entry
+  whose panel is open), so the ripple background stays intact and the highlight
+  needs no background swapping in code.
+-->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_selected="true" android:color="@color/brand_purple_tint" />
+    <item android:color="@android:color/transparent" />
+</selector>

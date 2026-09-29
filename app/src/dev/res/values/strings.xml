@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dev-flavor overrides: the .dev build installs side by side with the prod
+     build and with the original SamaQu app, so its labels must differ. -->
+<resources>
+    <string name="app_name">SAMAQU Dev</string>
+    <string name="ime_label">SAMAQU Dev</string>
+    <string name="settings_label">Pengaturan SAMAQU Dev</string>
+    <string name="dashboard_label">Dashboard SAMAQU Dev</string>
+    <string name="accessibility_label">SAMAQU Dev Auto-Paste</string>
+</resources>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Dashboard overflow menu. Kept on the Toolbar so the same two entries stay reachable
+  whether the screen is showing the web dashboard or the offline summary.
+-->
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_summary"
+        android:title="@string/action_summary"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_manage_templates"
+        android:title="@string/btn_manage_templates"
+        app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_settings"
+        android:title="@string/settings_label"
+        app:showAsAction="never" />
+</menu>

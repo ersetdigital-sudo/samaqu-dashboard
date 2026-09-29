@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Quick Calculator equals key: the one filled accent key, so the commit action is obvious. -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="@color/brand_purple_dark">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/brand_purple" />
+            <corners android:radius="12dp" />
+        </shape>
+    </item>
+</ripple>
