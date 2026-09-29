@@ -184,8 +184,14 @@ Rules that exist for reasons:
 - `local.properties` is gitignored and points at this machine's SDK; regenerate it.
 - Line endings: `.gitattributes` normalises to LF in the repository.
 - `release/SAMAQU-Lite-v1.0.1.apk` is committed **on purpose** so a clone has something to
-  install without building. Rebuild and update it deliberately — every refresh is ~6 MB
-  in history forever.
+  install without building. It is deliberately the **debug** build, byte-identical to
+  `app/build/outputs/apk/lite/debug/app-lite-debug.apk` (~10.6 MB), because that is the
+  APK the team actually sideloads — a size mismatch reads as "wrong version" and gets the
+  shipped file distrusted. The release build (`.../lite/release/app-lite-release.apk`,
+  ~5.9 MB) carries the same code (`isMinifyEnabled = false`) and signs with the same
+  debug keystore, so either one installs over the other. To refresh the shipped APK:
+  `cp app/build/outputs/apk/lite/debug/app-lite-debug.apk release/SAMAQU-Lite-v1.0.1.apk`
+  and commit it deliberately — every refresh is ~11 MB in history forever.
 - `sources/`, `poc-samaqu-keyboard/` and `samaqu-site-ref/` are **outside** this repo
   (decompiled reference, toolchain, and a read-only clone of the store site).
 

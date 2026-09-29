@@ -12,7 +12,8 @@ emoji, and a quick calculator reached by holding **Enter**.
 ### Install without building
 
 A prebuilt APK of the shipped flavor is committed under [`release/`](release/) —
-`SAMAQU-Lite-v1.0.1.apk`. Install that to try the app; build from source to change it.
+`SAMAQU-Lite-v1.0.1.apk` (the debug build, ~10 MB — same code as release, see
+[NOTES.md](NOTES.md) §8). Install that to try the app; build from source to change it.
 
 | | |
 |---|---|
