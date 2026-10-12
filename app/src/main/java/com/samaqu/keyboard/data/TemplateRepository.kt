@@ -1,6 +1,7 @@
 package com.samaqu.keyboard.data
 
 import android.content.Context
+import androidx.room.withTransaction
 import com.google.gson.Gson
 import com.samaqu.keyboard.network.ApiService
 import com.samaqu.keyboard.network.CategoryWrite
@@ -17,13 +18,17 @@ import retrofit2.Response
  * - On a fresh install an offline seed is inserted so Auto Text is usable
  *   immediately, before any backend is configured.
  * - [addTemplate] / [updateTemplate] / [deleteTemplate] and the matching category
- *   methods write to Supabase first and then re-sync, so a row always exists
- *   server-side before it exists on screen. Nothing is ever edited in the cache alone,
- *   because the next sync would discard it.
+ *   methods write to Supabase first and mirror the result into the cache from what the
+ *   server answers, so a row always exists server-side before it exists on screen. Nothing
+ *   is ever edited in the cache alone, because the next sync would discard it.
+ * - Creates ask for `Prefer: return=representation`, which is what makes one round trip
+ *   enough; the earlier version followed every write with a full [sync], paying a second
+ *   request for data the write had already confirmed.
  */
 class TemplateRepository(ctx: Context) {
 
-    private val dao: TemplateDao = AppDatabase.get(ctx).templateDao()
+    private val db: AppDatabase = AppDatabase.get(ctx)
+    private val dao: TemplateDao = db.templateDao()
     private val prefs = Prefs(ctx)
 
     suspend fun getTemplates(): List<CategoryWithTemplates> {
@@ -41,19 +46,29 @@ class TemplateRepository(ctx: Context) {
         return dao.categoryCount() to dao.templateCount()
     }
 
-    /** Pulls templates from Supabase. Returns success/failure via [Result]. */
+    /**
+     * Pulls templates from Supabase. Returns success/failure via [Result].
+     *
+     * The clear-and-refill runs inside one transaction on purpose. Clearing first and
+     * inserting afterwards - which is what this used to do - left both tables empty if the
+     * insert half failed, and an empty cache is indistinguishable from a fresh install to
+     * [getTemplates], so it re-seeded the built-in offline templates: the user's own
+     * templates silently disappeared and the canned defaults looked like the real data.
+     */
     suspend fun sync(): Result<Unit> = runCatching {
         val remote = api().getTemplates()
 
-        dao.clearTemplates()
-        dao.clearCategories()
-        // Postgres ids are bigint; the Room cache keys are Int, so narrow them here.
-        dao.insertCategories(remote.map { CachedCategory(it.id.toInt(), it.name) })
-        dao.insertTemplates(
-            remote.flatMap { category ->
+        db.withTransaction {
+            // Postgres ids are bigint; the Room cache keys are Int, so narrow them here.
+            val categories = remote.map { CachedCategory(it.id.toInt(), it.name) }
+            val templates = remote.flatMap { category ->
                 category.templates.map { CachedTemplate(it.id.toInt(), category.id.toInt(), it.content) }
             }
-        )
+            dao.clearTemplates()
+            dao.clearCategories()
+            dao.insertCategories(categories)
+            dao.insertTemplates(templates)
+        }
     }
 
     // ---------------------------------------------------------------- writes
@@ -69,18 +84,25 @@ class TemplateRepository(ctx: Context) {
 
     private fun templateUrl(id: Int) = "rest/v1/templates?id=eq.$id"
 
-    /** Runs a mutation on Supabase, then replaces the cache with the server's answer. */
-    private suspend fun write(block: suspend () -> Response<ResponseBody>): Result<Unit> = runCatching {
+    /**
+     * Runs a write whose answer is not needed (a PATCH, a DELETE).
+     *
+     * PostgREST explains refusals in the body (RLS denial, constraint, ...); that message is
+     * surfaced instead of the bare "HTTP 401" Retrofit would put in the exception.
+     */
+    private suspend fun send(block: suspend () -> Response<ResponseBody>) {
         val response = block()
-        if (!response.isSuccessful) {
-            // PostgREST explains itself in the body (RLS denial, constraint, ...); surface
-            // that instead of the bare "HTTP 401" Retrofit would put in the exception.
-            error(postgrestMessage(response))
-        }
-        sync().getOrThrow()
+        if (!response.isSuccessful) error(postgrestMessage(response))
     }
 
-    private fun postgrestMessage(response: Response<ResponseBody>): String {
+    /** Runs a write that answers with the affected rows (`Prefer: return=representation`). */
+    private suspend fun <T> sentRows(block: suspend () -> Response<List<T>>): List<T> {
+        val response = block()
+        if (!response.isSuccessful) error(postgrestMessage(response))
+        return response.body().orEmpty()
+    }
+
+    private fun postgrestMessage(response: Response<*>): String {
         val body = runCatching { response.errorBody()?.string() }.getOrNull()
         val detail = runCatching {
             Gson().fromJson(body, com.google.gson.JsonObject::class.java)
@@ -89,28 +111,55 @@ class TemplateRepository(ctx: Context) {
         return detail ?: "HTTP ${response.code()}"
     }
 
-    suspend fun addCategory(name: String, displayOrder: Int): Result<Unit> =
-        write { api().createCategory(CategoryWrite(name = name, displayOrder = displayOrder)) }
+    suspend fun addCategory(name: String, displayOrder: Int): Result<Unit> = runCatching {
+        val rows = sentRows {
+            api().createCategory(CategoryWrite(name = name, displayOrder = displayOrder))
+        }
+        // No representation means the new id is unknown, so fall back to a full read rather
+        // than invent a key for the cache.
+        val row = rows.firstOrNull() ?: return@runCatching sync().getOrThrow()
+        dao.insertCategories(listOf(CachedCategory(row.id.toInt(), row.name)))
+    }
 
-    suspend fun renameCategory(id: Int, name: String): Result<Unit> =
-        write { api().updateCategory(categoryUrl(id), CategoryWrite(name = name)) }
+    suspend fun renameCategory(id: Int, name: String): Result<Unit> = runCatching {
+        send { api().updateCategory(categoryUrl(id), CategoryWrite(name = name)) }
+        dao.updateCategoryName(id, name)
+    }
 
     /** Deletes a category; its templates go with it via `on delete cascade`. */
-    suspend fun deleteCategory(id: Int): Result<Unit> =
-        write { api().deleteCategory(categoryUrl(id)) }
+    suspend fun deleteCategory(id: Int): Result<Unit> = runCatching {
+        send { api().deleteCategory(categoryUrl(id)) }
+        // The cascade runs in Postgres, so the cache has to mirror it explicitly.
+        dao.deleteTemplatesOfCategory(id)
+        dao.deleteCategoryById(id)
+    }
 
     suspend fun addTemplate(categoryId: Int, content: String, displayOrder: Int): Result<Unit> =
-        write {
-            api().createTemplate(
-                TemplateWrite(categoryId = categoryId.toLong(), content = content, displayOrder = displayOrder)
+        runCatching {
+            val rows = sentRows {
+                api().createTemplate(
+                    TemplateWrite(
+                        categoryId = categoryId.toLong(),
+                        content = content,
+                        displayOrder = displayOrder
+                    )
+                )
+            }
+            val row = rows.firstOrNull() ?: return@runCatching sync().getOrThrow()
+            dao.insertTemplates(
+                listOf(CachedTemplate(row.id.toInt(), row.categoryId.toInt(), row.content))
             )
         }
 
-    suspend fun updateTemplate(id: Int, content: String): Result<Unit> =
-        write { api().updateTemplate(templateUrl(id), TemplateWrite(content = content)) }
+    suspend fun updateTemplate(id: Int, content: String): Result<Unit> = runCatching {
+        send { api().updateTemplate(templateUrl(id), TemplateWrite(content = content)) }
+        dao.updateTemplateContent(id, content)
+    }
 
-    suspend fun deleteTemplate(id: Int): Result<Unit> =
-        write { api().deleteTemplate(templateUrl(id)) }
+    suspend fun deleteTemplate(id: Int): Result<Unit> = runCatching {
+        send { api().deleteTemplate(templateUrl(id)) }
+        dao.deleteTemplateById(id)
+    }
 
     private suspend fun seedOffline() {
         val categories = listOf(

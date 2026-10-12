@@ -30,4 +30,23 @@ interface TemplateDao {
 
     @Query("SELECT COUNT(*) FROM templates")
     suspend fun templateCount(): Int
+
+    // Targeted change queries, used by the write paths. They exist so a save can mirror its
+    // own result into the cache instead of re-reading every category and template.
+
+    @Query("UPDATE templates SET content = :content WHERE id = :id")
+    suspend fun updateTemplateContent(id: Int, content: String)
+
+    @Query("DELETE FROM templates WHERE id = :id")
+    suspend fun deleteTemplateById(id: Int)
+
+    @Query("UPDATE categories SET name = :name WHERE id = :id")
+    suspend fun updateCategoryName(id: Int, name: String)
+
+    /** Mirrors Postgres' `on delete cascade` when a category is removed. */
+    @Query("DELETE FROM templates WHERE categoryId = :categoryId")
+    suspend fun deleteTemplatesOfCategory(categoryId: Int)
+
+    @Query("DELETE FROM categories WHERE id = :id")
+    suspend fun deleteCategoryById(id: Int)
 }

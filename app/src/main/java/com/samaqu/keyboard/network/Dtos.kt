@@ -8,6 +8,24 @@ data class RemoteTemplate(
     val content: String
 )
 
+/**
+ * Row shape PostgREST returns for a write when the request asks for
+ * `Prefer: return=representation`.
+ *
+ * Only the create paths need it: Postgres assigns the id, and without the returned row the
+ * only way to learn the new key would be re-reading the whole table.
+ */
+data class WrittenCategory(
+    val id: Long,
+    val name: String
+)
+
+data class WrittenTemplate(
+    val id: Long,
+    @SerializedName("category_id") val categoryId: Long,
+    val content: String
+)
+
 /** A `public.categories` row with its `templates` embedded by PostgREST. */
 data class CategoryWithTemplates(
     val id: Long,

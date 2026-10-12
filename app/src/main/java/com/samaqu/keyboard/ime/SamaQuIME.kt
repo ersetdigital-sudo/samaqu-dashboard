@@ -118,6 +118,15 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
 
     private var allCategories: List<CategoryWithTemplates> = emptyList()
 
+    /**
+     * Category chip the Auto Text panel is showing.
+     *
+     * Kept so a background refresh re-selects what is on screen instead of snapping back to
+     * the first chip: the list a CS is reading must not move under them because a sync
+     * finished.
+     */
+    private var selectedCategoryIndex = 0
+
     // ---------------------------------------------------------------- lifecycle
 
     override fun onCreate() {
@@ -241,6 +250,10 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         // Toolbar actions
         view.findViewById<LinearLayout>(R.id.btnAutoText).setOnClickListener {
             showPanel(templatePanel)
+            // The dashboard writes straight to Supabase, so what the cache holds is stale the
+            // moment a template is added there. Pulling on open is what makes a new template
+            // appear without the user having to hunt for the Sync button.
+            refreshTemplates()
         }
         view.findViewById<LinearLayout>(R.id.btnSync).setOnClickListener { doSync() }
         view.findViewById<LinearLayout>(R.id.btnInvoice).setOnClickListener {
@@ -1040,8 +1053,29 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
 
     // -------------------------------------------------------------- data load
 
+    /** Shows whatever the cache already holds - instant, and works with no connection. */
     private fun loadCachedTemplates() {
         scope.launch {
+            allCategories = withContext(Dispatchers.IO) { repo.getTemplates() }
+            renderCategories()
+        }
+    }
+
+    /**
+     * Cache first, then the backend.
+     *
+     * Rendering the cache before the request keeps the list from blanking out while the round
+     * trip is in flight, and if the pull fails (offline, RLS) the cached list simply stays on
+     * screen rather than being replaced by an error or by an empty panel.
+     */
+    private fun refreshTemplates() {
+        scope.launch {
+            allCategories = withContext(Dispatchers.IO) { repo.getTemplates() }
+            renderCategories()
+
+            val synced = withContext(Dispatchers.IO) { repo.sync().isSuccess }
+            if (!synced) return@launch
+
             allCategories = withContext(Dispatchers.IO) { repo.getTemplates() }
             renderCategories()
         }
@@ -1086,12 +1120,13 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
             chipPadding(chip)
             tabs.addView(chip, chipParams())
         }
-        selectTemplateCategory(0)
+        selectTemplateCategory(selectedCategoryIndex.coerceIn(0, allCategories.lastIndex))
     }
 
     private fun selectTemplateCategory(index: Int) {
         val adapter = templateAdapter ?: return
         val category = allCategories.getOrNull(index) ?: return
+        selectedCategoryIndex = index
         adapter.submitList(category.templates)
         styleChips(categoryTabs, index)
     }

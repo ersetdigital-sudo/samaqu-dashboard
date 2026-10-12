@@ -25,6 +25,14 @@ class AutoTextFragment : Fragment() {
 
     private var adapter: TemplateAdapter? = null
 
+    /**
+     * Category whose templates are on screen, or null for "not chosen yet".
+     *
+     * Kept so the re-render that follows the backend pull does not yank the list back to the
+     * first category while it is being read.
+     */
+    private var selectedCategoryId: Int? = null
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -43,16 +51,37 @@ class AutoTextFragment : Fragment() {
 
         val repo = TemplateRepository(requireContext())
         viewLifecycleOwner.lifecycleScope.launch {
-            val cats = withContext(Dispatchers.IO) { repo.getTemplates() }
-            empty.visibility = if (cats.isEmpty()) View.VISIBLE else View.GONE
-            renderTabs(tabs, adp, cats)
+            // Cache first: instant, and it is all there is while offline.
+            show(tabs, empty, adp, withContext(Dispatchers.IO) { repo.getTemplates() })
+
+            // Then the backend. The dashboard writes straight to Supabase, so without this the
+            // tab kept showing whatever the cache held when the app was last open - which is
+            // exactly why it disagreed with the dashboard.
+            if (!withContext(Dispatchers.IO) { repo.sync().isSuccess }) return@launch
+
+            show(tabs, empty, adp, withContext(Dispatchers.IO) { repo.getTemplates() })
         }
+    }
+
+    private fun show(
+        tabs: LinearLayout,
+        empty: TextView,
+        adp: TemplateAdapter,
+        cats: List<CategoryWithTemplates>
+    ) {
+        empty.visibility = if (cats.isEmpty()) View.VISIBLE else View.GONE
+        renderTabs(tabs, adp, cats)
     }
 
     private fun renderTabs(tabs: LinearLayout, adp: TemplateAdapter, cats: List<CategoryWithTemplates>) {
         tabs.removeAllViews()
         if (cats.isEmpty()) return
-        adp.submitList(cats.first().templates)
+
+        if (cats.none { it.category.id == selectedCategoryId }) {
+            selectedCategoryId = cats.first().category.id
+        }
+        adp.submitList(cats.first { it.category.id == selectedCategoryId }.templates)
+
         cats.forEach { cat ->
             val tv = TextView(requireContext()).apply {
                 text = cat.category.name
@@ -61,7 +90,10 @@ class AutoTextFragment : Fragment() {
                 setTextColor(0xFF1E3A8A.toInt())
                 typeface = Typeface.SERIF
                 setBackgroundResource(R.drawable.tab_bg)
-                setOnClickListener { adp.submitList(cat.templates) }
+                setOnClickListener {
+                    selectedCategoryId = cat.category.id
+                    adp.submitList(cat.templates)
+                }
             }
             tabs.addView(tv)
         }

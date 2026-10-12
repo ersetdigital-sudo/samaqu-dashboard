@@ -5,6 +5,7 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.Headers
 import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Url
@@ -60,9 +61,15 @@ interface ApiService {
     // Each mutation returns the raw [Response] instead of Unit so the caller can read
     // PostgREST's `{"message": ...}` body when RLS or a constraint rejects the write, and
     // so a 204 No Content never has to be mapped onto a non-null Kotlin return type.
+    //
+    // The two creates additionally ask for `Prefer: return=representation`, so PostgREST
+    // answers with the inserted row. That row is what lets the cache be updated from the
+    // write itself instead of re-reading every category and template afterwards - one round
+    // trip per save instead of two, which is the difference the user feels.
 
     @POST("rest/v1/categories")
-    suspend fun createCategory(@Body body: CategoryWrite): Response<ResponseBody>
+    @Headers("Prefer: return=representation")
+    suspend fun createCategory(@Body body: CategoryWrite): Response<List<WrittenCategory>>
 
     @PATCH
     suspend fun updateCategory(@Url url: String, @Body body: CategoryWrite): Response<ResponseBody>
@@ -71,7 +78,8 @@ interface ApiService {
     suspend fun deleteCategory(@Url url: String): Response<ResponseBody>
 
     @POST("rest/v1/templates")
-    suspend fun createTemplate(@Body body: TemplateWrite): Response<ResponseBody>
+    @Headers("Prefer: return=representation")
+    suspend fun createTemplate(@Body body: TemplateWrite): Response<List<WrittenTemplate>>
 
     @PATCH
     suspend fun updateTemplate(@Url url: String, @Body body: TemplateWrite): Response<ResponseBody>

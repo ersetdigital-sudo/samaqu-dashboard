@@ -177,16 +177,25 @@ function toast(message, isError) {
   toastTimer = setTimeout(() => el.classList.remove("show"), 3200);
 }
 
-/** Runs a mutation, then reloads from the server so the view never lies. */
+/**
+ * Runs a mutation and paints the result from what the request already told us.
+ *
+ * Every save used to be followed by load() - a second full round trip just to display data
+ * the write had already confirmed. On the slow links this page is used on, that second
+ * request was most of the waiting. The server stays the source of truth: only the row it
+ * sends back is applied, and a failure still falls back to a full read so the screen can
+ * never drift away from Supabase.
+ */
 async function mutate(successText, run) {
   busy(true);
   try {
     await run();
-    await load();
+    render();
     toast(successText);
     return true;
   } catch (err) {
     toast("Gagal: " + err.message, true);
+    try { await load(); } catch (_) { /* keep the toast that explains the real failure */ }
     return false;
   } finally {
     busy(false);
@@ -292,8 +301,12 @@ function renderTemplates() {
     del.textContent = "Hapus";
     del.onclick = () => {
       if (!confirm("Hapus template ini dari Supabase?")) return;
-      mutate("Template terhapus ✓",
-        () => api("/rest/v1/templates?id=eq." + t.id, { method: "DELETE" }));
+      const target = t.id;
+      mutate("Template terhapus ✓", async () => {
+        await api("/rest/v1/templates?id=eq." + target, { method: "DELETE" });
+        const c = current();
+        if (c) c.templates = (c.templates || []).filter(x => x.id !== target);
+      });
     };
 
     acts.appendChild(edit);
@@ -346,18 +359,24 @@ $("formCat").onsubmit = async (e) => {
   if (catMode === "rename") {
     const cat = current();
     if (!cat) return;
-    const ok = await mutate("Kategori diubah ✓", () =>
-      api("/rest/v1/categories?id=eq." + cat.id, {
+    const ok = await mutate("Kategori diubah ✓", async () => {
+      await api("/rest/v1/categories?id=eq." + cat.id, {
         method: "PATCH", body: JSON.stringify({ name })
-      }));
+      });
+      cat.name = name;
+    });
     if (ok) closeCatForm();
   } else {
-    const ok = await mutate("Kategori ditambah ✓", () =>
-      api("/rest/v1/categories", {
+    const ok = await mutate("Kategori ditambah ✓", async () => {
+      const rows = await api("/rest/v1/categories", {
         method: "POST",
         headers: { Prefer: "return=representation" },
         body: JSON.stringify({ name, display_order: nextOrder(cats) })
-      }));
+      });
+      // No row back means the id is unknown, so fall back to a read rather than invent one.
+      if (!rows || !rows.length) { await load(); return; }
+      cats.push({ ...rows[0], templates: [] });
+    });
     if (ok) closeCatForm();
   }
 };
@@ -370,9 +389,11 @@ $("btnDeleteCat").onclick = () => {
     ? "Hapus kategori “" + cat.name + "” beserta " + n + " template di dalamnya?"
     : "Hapus kategori “" + cat.name + "”?";
   if (!confirm(msg)) return;
-  selectedId = null;
-  mutate("Kategori terhapus ✓", () =>
-    api("/rest/v1/categories?id=eq." + cat.id, { method: "DELETE" }));
+  mutate("Kategori terhapus ✓", async () => {
+    await api("/rest/v1/categories?id=eq." + cat.id, { method: "DELETE" });
+    cats = cats.filter(c => c.id !== cat.id);
+    selectedId = cats.length ? cats[0].id : null;
+  });
 };
 
 $("formTpl").onsubmit = async (e) => {
@@ -383,21 +404,29 @@ $("formTpl").onsubmit = async (e) => {
   if (!cat) { toast("Pilih kategori dulu", true); return; }
 
   if (editingId) {
-    const ok = await mutate("Template diubah ✓", () =>
-      api("/rest/v1/templates?id=eq." + editingId, {
+    const target = editingId;
+    const ok = await mutate("Template diubah ✓", async () => {
+      await api("/rest/v1/templates?id=eq." + target, {
         method: "PATCH", body: JSON.stringify({ content })
-      }));
+      });
+      const t = (cat.templates || []).find(x => x.id === target);
+      if (t) t.content = content;
+    });
     if (ok) resetTemplateForm();
   } else {
-    const ok = await mutate("Template ditambah ✓", () =>
-      api("/rest/v1/templates", {
+    const ok = await mutate("Template ditambah ✓", async () => {
+      const rows = await api("/rest/v1/templates", {
         method: "POST",
+        headers: { Prefer: "return=representation" },
         body: JSON.stringify({
           category_id: cat.id,
           content,
           display_order: nextOrder(cat.templates || [])
         })
-      }));
+      });
+      if (!rows || !rows.length) { await load(); return; }
+      cat.templates = (cat.templates || []).concat(rows[0]);
+    });
     if (ok) { $("tplText").value = ""; }
   }
 };
