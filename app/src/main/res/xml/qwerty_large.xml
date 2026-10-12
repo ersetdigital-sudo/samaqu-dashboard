@@ -2,7 +2,7 @@
 <!-- Same Gboard-style geometry as qwerty.xml, taller keys for the "Besar" setting. -->
 <Keyboard xmlns:android="http://schemas.android.com/apk/res/android"
     android:keyWidth="10%p"
-    android:keyHeight="9.5%p"
+    android:keyHeight="8.2%p"
     android:horizontalGap="0dp"
     android:verticalGap="0dp">
     <Row>

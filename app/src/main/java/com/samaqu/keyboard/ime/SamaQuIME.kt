@@ -304,6 +304,9 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         }
 
         limitPanelHeights()
+        // First run happens before layout, when the deck still measures 0 px; re-apply
+        // with the real deck height so stacked panels cannot cover the app below.
+        view.post { limitPanelHeights() }
 
         setupToolbar(view)
         setupInvoicePanel(view)
@@ -954,10 +957,18 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
      */
     private fun limitPanelHeights() {
         val maxPx = maxPanelHeightPx()
+        // A panel stacked over the letter deck also has to leave room for that deck, or
+        // toolbar + panel + rows could push the app past MIN_VISIBLE_APP_DP on a short or
+        // landscape screen. The deck is 0 px the first time this runs (called before the
+        // first layout), so onCreateInputView re-applies the cap once it has a height.
+        val deck = keyboardView
+        val deckPx = if (deck != null && deck.visibility == View.VISIBLE) deck.height else 0
         allPanels().filterNotNull().forEach { panel ->
             val params = panel.layoutParams ?: return@forEach
-            if (params.height > maxPx) {
-                params.height = maxPx
+            val cap = if (replacesDeck(panel)) maxPx
+            else (maxPx - deckPx).coerceAtLeast(dp(MIN_PANEL_DP))
+            if (params.height > cap) {
+                params.height = cap
                 panel.layoutParams = params
             }
         }
@@ -1470,7 +1481,7 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         private const val DEFAULT_WEIGHT_GRAM = 1000
 
         /** Toolbar height from keyboard_main.xml, reserved when panel heights are capped. */
-        private const val TOOLBAR_HEIGHT_DP = 54
+        private const val TOOLBAR_HEIGHT_DP = 46
 
         /** Strip of the app, and of its input field, that must stay visible above the IME. */
         private const val MIN_VISIBLE_APP_DP = 160

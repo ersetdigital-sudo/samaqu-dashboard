@@ -95,10 +95,10 @@
     <string name="setup_step_2">2. Pilih SAMAQU sebagai keyboard aktif</string>
     <string name="btn_select_ime">Pilih SAMAQU sebagai Keyboard</string>
     <string name="display_section">Tampilan Keyboard</string>
-    <string name="key_size_label">Ukuran Tombol</string>
-    <string name="key_size_small">Kecil</string>
+    <string name="key_size_label">Tinggi Keyboard</string>
+    <string name="key_size_small">Compact</string>
     <string name="key_size_normal">Normal</string>
-    <string name="key_size_large">Besar</string>
+    <string name="key_size_large">Comfortable</string>
     <string name="btn_open_dashboard">Buka Dashboard</string>
 
     <!-- Dashboard WebView -->
@@ -118,7 +118,7 @@
     <string name="summary_backend_unset">Supabase: belum diatur</string>
     <string name="summary_token_set">anon key: terisi</string>
     <string name="summary_token_unset">anon key: kosong</string>
-    <string name="summary_key_size">Ukuran tombol: %1$s</string>
+    <string name="summary_key_size">Tinggi keyboard: %1$s</string>
     <string name="summary_app_version">Versi aplikasi: %1$s</string>
     <string name="btn_open_settings">Atur di Pengaturan</string>
     <string name="summary_web_hint">Buka menu Dashboard untuk mengubah pengaturan atau mengelola template langsung di app.</string>
