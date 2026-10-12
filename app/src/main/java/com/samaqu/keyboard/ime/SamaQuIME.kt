@@ -43,6 +43,7 @@ import com.samaqu.keyboard.ui.OrderAdapter
 import com.samaqu.keyboard.ui.ProductAdapter
 import com.samaqu.keyboard.ui.TemplateAdapter
 import com.samaqu.keyboard.ui.VariantAdapter
+import com.samaqu.keyboard.util.Backspace
 import com.samaqu.keyboard.util.CalculatorEngine
 import com.samaqu.keyboard.util.SamaQuText
 import com.samaqu.keyboard.util.ShiftState
@@ -121,6 +122,15 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
     /** Text field of the in-keyboard invoice form that currently receives typed keys. */
     private var focusedField: EditText? = null
 
+    /**
+     * Selection range the framework last reported for the current field (-1/-1 = nothing
+     * reported yet). `getSelectedText()` returns null both for "no selection" and for "read
+     * failed", so this is the only way to tell those apart when Backspace runs (rule C in
+     * [Backspace]).
+     */
+    private var trackedSelStart = -1
+    private var trackedSelEnd = -1
+
     private var allCategories: List<CategoryWithTemplates> = emptyList()
 
     /**
@@ -147,6 +157,10 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
 
     override fun onStartInputView(info: EditorInfo?, restarting: Boolean) {
         super.onStartInputView(info, restarting)
+        // A new field starts with no reported selection; the framework sends a fresh
+        // onUpdateSelection as soon as it knows the real one.
+        trackedSelStart = -1
+        trackedSelEnd = -1
         // Rebuild when the key size was changed in Settings, so the new size shows
         // up without the user having to switch to another keyboard and back.
         val configured = Prefs(this).keySize
@@ -1246,8 +1260,43 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         hideAllPanels()
     }
 
+    /** Keeps [trackedSelStart]/[trackedSelEnd] mirroring the target editor's selection. */
+    override fun onUpdateSelection(
+        oldSelStart: Int,
+        oldSelEnd: Int,
+        newSelStart: Int,
+        newSelEnd: Int,
+        newComposingStart: Int,
+        newComposingEnd: Int
+    ) {
+        super.onUpdateSelection(
+            oldSelStart, oldSelEnd, newSelStart, newSelEnd, newComposingStart, newComposingEnd
+        )
+        trackedSelStart = newSelStart
+        trackedSelEnd = newSelEnd
+    }
+
     private fun commit(text: String) {
         currentInputConnection?.commitText(text, 1)
+    }
+
+    /** The target app's editor seen through the five operations [Backspace] needs. */
+    private val backspaceTarget = object : Backspace.Target {
+        override fun selectedText(): CharSequence? = currentInputConnection?.getSelectedText(0)
+
+        override fun hasTrackedSelection(): Boolean =
+            trackedSelStart >= 0 && trackedSelEnd > trackedSelStart
+
+        override fun textBeforeCursor(length: Int): CharSequence? =
+            currentInputConnection?.getTextBeforeCursor(length, 0)
+
+        override fun deleteSurroundingText(beforeLength: Int, afterLength: Int) {
+            currentInputConnection?.deleteSurroundingText(beforeLength, afterLength)
+        }
+
+        override fun commitText(text: CharSequence, newCursorPosition: Int) {
+            currentInputConnection?.commitText(text, newCursorPosition)
+        }
     }
 
     // ------------------------------------------------------------ key handling
@@ -1279,7 +1328,10 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
             SamaQuKeyboardView.CODE_EMOJI -> showPanel(emojiPanel)
             SamaQuKeyboardView.CODE_QWERTY -> switchKeyboard(qwerty)
             SamaQuKeyboardView.CODE_SYMBOLS -> switchKeyboard(symbols)
-            SamaQuKeyboardView.CODE_DELETE -> ic.deleteSurroundingText(1, 0)
+            // Selection first, one whole char before the cursor otherwise. The old
+            // deleteSurroundingText(1, 0) could not delete a selection at all (the contract
+            // scopes it to text outside the selection) and split emoji surrogate pairs.
+            SamaQuKeyboardView.CODE_DELETE -> Backspace.delete(backspaceTarget)
             SamaQuKeyboardView.CODE_ENTER -> {
                 ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER))
                 ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER))
@@ -1358,7 +1410,17 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         val pos = field.selectionStart.coerceAtLeast(0)
 
         if (code == SamaQuKeyboardView.CODE_DELETE) {
-            if (text.isNotEmpty() && pos > 0) text.delete(pos - 1, pos)
+            // Same rules as Backspace.delete: a selection in the field is what goes,
+            // otherwise one whole character (emoji = both surrogate halves), and nothing
+            // at the start of the text. Selection order can be reversed while dragging.
+            val lo = minOf(field.selectionStart, field.selectionEnd)
+            val hi = maxOf(field.selectionStart, field.selectionEnd)
+            if (hi > lo) {
+                text.delete(lo, hi)
+                return
+            }
+            val units = Backspace.unitsToDelete(text.subSequence((pos - 2).coerceAtLeast(0), pos))
+            if (units > 0) text.delete(pos - units, pos)
             return
         }
         // Control codes (shift, emoji, ...) must never reach the field: code.toChar() on a
