@@ -45,6 +45,7 @@ import com.samaqu.keyboard.ui.TemplateAdapter
 import com.samaqu.keyboard.ui.VariantAdapter
 import com.samaqu.keyboard.util.CalculatorEngine
 import com.samaqu.keyboard.util.SamaQuText
+import com.samaqu.keyboard.util.ShiftState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -69,7 +70,11 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
     private var keyboardView: KeyboardView? = null
     private var qwerty: Keyboard? = null
     private var symbols: Keyboard? = null
-    private var caps = false
+    /**
+     * Shift state. Shared by the letter deck and by the IME's own in-panel fields, so both
+     * type the character the key on screen shows.
+     */
+    private val shift = ShiftState()
 
     /** Key size the current input view was built with, so Settings changes can be applied. */
     private var appliedKeySize: String? = null
@@ -148,6 +153,10 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         if (appliedKeySize != null && appliedKeySize != configured) {
             setInputView(onCreateInputView())
         }
+        // Shift belongs to the field, not to the IME: carrying ONCE or LOCKED across an app or
+        // field switch is how a keyboard ends up typing capitals while nothing on screen looks
+        // active. This keyboard has no auto-capitalisation, so OFF is the honest start state.
+        resetShift()
     }
 
     // ------------------------------------------------------------- input view
@@ -183,6 +192,11 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
             isHapticFeedbackEnabled = true
             isPreviewEnabled = false
         }
+
+        // The decks were just rebuilt from the XML, so they carry the lowercase labels again.
+        // Writing the shift state back on keeps a view recreated mid-caps-lock consistent with
+        // what it would type.
+        applyShiftToKeyboard()
 
         templatePanel = view.findViewById(R.id.templatePanel)
         invoicePanel = view.findViewById(R.id.invoicePanel)
@@ -1252,7 +1266,7 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
                 // Shift has to be routed here too. It used to fall through to typeToField,
                 // which inserted an invisible char and left caps untouched - so capitals
                 // stopped working as soon as any invoice/ongkir field was selected.
-                SamaQuKeyboardView.CODE_SHIFT -> toggleCaps()
+                SamaQuKeyboardView.CODE_SHIFT -> toggleShift()
                 SamaQuKeyboardView.CODE_ENTER -> focusedField = null
                 else -> typeToField(primaryCode)
             }
@@ -1270,12 +1284,10 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
                 ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_ENTER))
                 ic.sendKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_ENTER))
             }
-            SamaQuKeyboardView.CODE_SHIFT -> toggleCaps()
-            else -> {
-                val code = if (caps && primaryCode in 'a'.code..'z'.code) primaryCode - 32 else primaryCode
-                ic.commitText(code.toChar().toString(), 1)
-                if (caps) toggleCaps()
-            }
+            SamaQuKeyboardView.CODE_SHIFT -> toggleShift()
+            // Every key goes through the shift state; only a letter spends it. The old branch
+            // cancelled shift on whatever key came next, so shift-then-space ate the capital.
+            else -> ic.commitText(shiftedCode(primaryCode).toChar().toString(), 1)
         }
     }
 
@@ -1284,20 +1296,60 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         keyboardView?.invalidateAllKeys()
     }
 
-    private fun toggleCaps() {
-        caps = !caps
-        qwerty?.setShifted(caps)
+    /** One tap: lowercase -> one capital -> Caps Lock -> lowercase. */
+    private fun toggleShift() {
+        shift.tap()
+        applyShiftToKeyboard()
+    }
 
-        // Every letter has an explicit keyLabel, and setShifted does not touch those, so
-        // nothing on screen used to change when shift was tapped. The face colour and the
-        // glyph below are what make the caps state visible.
-        (keyboardView as? SamaQuKeyboardView)?.shiftActive = caps
-        val label = if (caps) SHIFT_LABEL_ON else SHIFT_LABEL_OFF
+    /**
+     * Pushes the shift state onto the decks.
+     *
+     * Every letter key carries an explicit `keyLabel` in the XML and `setShifted()` does not
+     * rewrite those, so the capitals have to be written onto the keys by hand. Without that
+     * the deck kept reading "q" while it typed "Q", which is exactly the desync between the
+     * key face, the key label and the committed character that this has to rule out.
+     */
+    private fun applyShiftToKeyboard() {
+        val active = shift.isActive
+
+        (keyboardView as? SamaQuKeyboardView)?.shiftActive = active
+
         listOfNotNull(qwerty, symbols).forEach { kb ->
-            kb.keys.firstOrNull { it.codes[0] == SamaQuKeyboardView.CODE_SHIFT }?.label = label
+            kb.setShifted(active)
+            kb.keys.forEach { key ->
+                val code = key.codes.firstOrNull() ?: return@forEach
+                if (code in 'a'.code..'z'.code) {
+                    key.label = (if (active) code - SHIFT_CASE_DELTA else code).toChar().toString()
+                }
+            }
+            // OFF and ONCE share the arrow and differ only by the tint; the filled glyph is
+            // what marks the state that outlives the letter it is about to produce.
+            kb.keys.firstOrNull { it.codes.firstOrNull() == SamaQuKeyboardView.CODE_SHIFT }
+                ?.label = if (shift.isLocked) SHIFT_LABEL_LOCKED else SHIFT_LABEL_OFF
         }
 
         keyboardView?.invalidateAllKeys()
+    }
+
+    /**
+     * The code to actually type, once shift has had its say.
+     *
+     * Repainting only when the state moved keeps the per-keypress path clear of a full
+     * `invalidateAllKeys()`, while still guaranteeing the deck always matches what was typed.
+     */
+    private fun shiftedCode(primaryCode: Int): Int {
+        val before = shift.level
+        val code = shift.resolve(primaryCode)
+        if (shift.level != before) applyShiftToKeyboard()
+        return code
+    }
+
+    /** A new input field always starts in lowercase. */
+    private fun resetShift() {
+        if (!shift.isActive) return
+        shift.reset()
+        applyShiftToKeyboard()
     }
 
     private fun typeToField(code: Int) {
@@ -1313,9 +1365,7 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         // negative value yields an invisible 0xFFFF that then sits in the input.
         if (code < ' '.code) return
 
-        var c = code
-        if (caps && c in 'a'.code..'z'.code) c -= 32
-        text.insert(pos, c.toChar().toString())
+        text.insert(pos, shiftedCode(code).toChar().toString())
     }
 
     // KeyboardView callbacks we don't need
@@ -1375,6 +1425,11 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         private const val ENTER_LONG_PRESS_TAP_WINDOW_MS = 1_000L
 
         private const val SHIFT_LABEL_OFF = "⇧"
-        private const val SHIFT_LABEL_ON = "⇪"
+
+        /** Caps Lock's filled arrow, so the state that survives a letter is the visible one. */
+        private const val SHIFT_LABEL_LOCKED = "⇪"
+
+        /** 'a' - 'A': the offset that turns a lowercase key code into its capital. */
+        private const val SHIFT_CASE_DELTA = 32
     }
 }
