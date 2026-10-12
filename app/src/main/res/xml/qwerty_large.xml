@@ -42,7 +42,8 @@
     <Row>
         <Key android:keyWidth="15%p" android:codes="-100" android:keyEdgeFlags="left" android:keyLabel="@string/key_num" />
         <Key android:codes="-200" android:keyLabel="☺" />
-        <Key android:keyWidth="45%p" android:codes="32" android:keyLabel="spasi" />
+        <Key android:codes="44" android:keyLabel="," />
+        <Key android:keyWidth="35%p" android:codes="32" android:keyLabel="spasi" />
         <Key android:codes="46" android:keyLabel="." />
         <Key android:keyWidth="20%p" android:codes="-4" android:keyEdgeFlags="right" android:keyLabel="↵" />
     </Row>
