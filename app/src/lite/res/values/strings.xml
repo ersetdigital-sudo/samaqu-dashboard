@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Lite-flavor overrides: distinct label so it is obvious which build is installed. -->
+<!-- Lite-flavor overrides: label shown on the launcher icon and in the keyboard picker.
+     Renamed from "SAMAQU Keyboard" so the app the team installs carries the plain product
+     name; the flavor itself (and its package id .lite) is unchanged. -->
 <resources>
-    <string name="app_name">SAMAQU Lite</string>
-    <string name="ime_label">SAMAQU Lite</string>
-    <string name="settings_label">Pengaturan SAMAQU Lite</string>
-    <string name="dashboard_label">Dashboard SAMAQU Lite</string>
-    <string name="accessibility_label">SAMAQU Lite Auto-Paste</string>
+    <string name="app_name">SAMAQU Keyboard</string>
+    <string name="ime_label">SAMAQU Keyboard</string>
+    <string name="settings_label">Pengaturan SAMAQU Keyboard</string>
+    <string name="dashboard_label">Dashboard SAMAQU Keyboard</string>
+    <string name="accessibility_label">SAMAQU Keyboard Auto-Paste</string>
 </resources>
