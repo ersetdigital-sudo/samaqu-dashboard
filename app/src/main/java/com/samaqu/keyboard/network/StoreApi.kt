@@ -22,12 +22,12 @@ import java.util.concurrent.TimeUnit
 interface StoreApi {
 
     /**
-     * Tariff check. The store maps the destination kecamatan to a J&T area code itself and
-     * requests both EZ and ECO; only the services J&T actually serves for that route come back.
-     * Weight is in grams.
+     * Tariff check. The store maps the destination to a J&T area code itself; `district` is what
+     * actually decides it and `city` disambiguates between same-named districts. Weight is in
+     * grams.
      *
-     * `district` and a positive `weight` are required, otherwise the endpoint answers
-     * `400 {"error":"district dan weight wajib"}`.
+     * All three fields must be non-empty and the weight above zero, otherwise the endpoint
+     * answers `400 {"error":"city, district, weight wajib"}` - verified against the live API.
      */
     @POST("api/shipping/jnt-cost")
     suspend fun jntCost(@Body body: JntCostRequest): JntCostResponse

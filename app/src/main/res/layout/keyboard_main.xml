@@ -844,10 +844,26 @@
 
             <EditText
                 android:id="@+id/ongkirDistrict"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="42dp"
+                android:layout_weight="1"
                 android:background="@drawable/field_bg"
                 android:hint="@string/hint_kecamatan"
+                android:importantForAutofill="no"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_muted"
+                android:textSize="12sp" />
+
+            <EditText
+                android:id="@+id/ongkirCity"
+                android:layout_width="0dp"
+                android:layout_height="42dp"
+                android:layout_marginStart="8dp"
+                android:layout_weight="1"
+                android:background="@drawable/field_bg"
+                android:hint="@string/hint_kota"
                 android:importantForAutofill="no"
                 android:paddingStart="12dp"
                 android:paddingEnd="12dp"

@@ -357,6 +357,7 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
     private fun setupOngkirPanel(view: View) {
         val fields = listOf(
             view.findViewById<EditText>(R.id.ongkirDistrict),
+            view.findViewById<EditText>(R.id.ongkirCity),
             view.findViewById<EditText>(R.id.ongkirWeight)
         )
         fields.forEach { field ->
@@ -383,15 +384,16 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
     private fun checkOngkir() {
         val view = rootView ?: return
         val district = view.findViewById<EditText>(R.id.ongkirDistrict).text.toString().trim()
-        // The store resolves the J&T area from the kecamatan alone; only a non-empty district
-        // and a positive weight are required, so both are checked before sending.
+        val city = view.findViewById<EditText>(R.id.ongkirCity).text.toString().trim()
+        // The store's endpoint rejects a request with any empty field (400 "city, district,
+        // weight wajib"), and a zero weight too, so both are checked before sending.
         val weight = view.findViewById<EditText>(R.id.ongkirWeight).text.toString()
             .toIntOrNull()?.takeIf { it > 0 } ?: DEFAULT_WEIGHT_GRAM
         val status = view.findViewById<TextView>(R.id.ongkirStatus)
         val results = view.findViewById<LinearLayout>(R.id.ongkirResults)
 
         results.removeAllViews()
-        if (district.isBlank()) {
+        if (district.isBlank() || city.isBlank()) {
             status.text = getString(R.string.ongkir_need_area)
             status.visibility = View.VISIBLE
             return
@@ -404,7 +406,7 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
 
         scope.launch {
             val result = withContext(Dispatchers.IO) {
-                shipping.cost(district, weight)
+                shipping.cost(city, district, weight)
             }
             result.fold(
                 onSuccess = { options ->

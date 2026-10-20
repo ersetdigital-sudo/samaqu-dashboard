@@ -43,9 +43,10 @@
 
     <!-- Panel Cek Ongkir (J&T) -->
     <string name="hint_kecamatan">Kecamatan</string>
+    <string name="hint_kota">Kota / Kabupaten</string>
     <string name="hint_berat">Berat (gram)</string>
     <string name="btn_check_ongkir">Cek Ongkir</string>
-    <string name="ongkir_need_area">Isi kecamatan tujuan dulu</string>
+    <string name="ongkir_need_area">Isi kecamatan dan kota/kabupaten tujuan dulu</string>
     <string name="ongkir_loading">Menghitung ongkir…</string>
     <string name="ongkir_empty">Tidak ada layanan J&amp;T untuk tujuan itu</string>
     <string name="ongkir_use">Pakai</string>
