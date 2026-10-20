@@ -101,9 +101,11 @@ data class TemplateWrite(
 
 // ------------------------------------------------------------- store website API
 
-/** Body of `POST /api/shipping/jnt-cost` on the store site. `weight` is in grams. */
+/**
+ * Body of `POST /api/shipping/jnt-cost` on the store site. `district` (kecamatan) is the only
+ * location field; `weight` is in grams.
+ */
 data class JntCostRequest(
-    val city: String,
     val district: String,
     val weight: Int
 )
