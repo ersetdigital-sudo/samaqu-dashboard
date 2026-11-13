@@ -62,7 +62,7 @@
     <string name="hint_product">Nama produk</string>
 
     <!-- Pilih produk dari katalog Supabase -->
-    <string name="btn_pick_product">Pilih \u25BE</string>
+    <string name="btn_pick_product">+ Produk</string>
     <string name="panel_product_title">Pilih Produk</string>
     <string name="hint_search_product">Cari produk…</string>
     <string name="product_all">Semua</string>
@@ -188,4 +188,14 @@
     <string name="toast_deleted">Terhapus ✓</string>
     <string name="toast_write_failed">Gagal menyimpan: %1$s</string>
     <string name="toast_name_required">Nama / teks tidak boleh kosong</string>
+    <string name="invoice_label_buyer">Nama pembeli</string>
+    <string name="invoice_label_phone">No. WA</string>
+    <string name="invoice_label_address">Alamat</string>
+    <string name="invoice_label_items">Pesanan</string>
+    <string name="invoice_items_empty">Belum ada produk. Tekan + Produk.</string>
+    <string name="invoice_label_shipping">Ongkir (Rp)</string>
+    <string name="btn_invoice_ongkir">Cek ongkir</string>
+    <string name="invoice_total">Total: %1$s</string>
+    <string name="invoice_need_item">Pilih minimal satu produk</string>
+    <string name="invoice_item_price">Harga satuan</string>
 </resources>

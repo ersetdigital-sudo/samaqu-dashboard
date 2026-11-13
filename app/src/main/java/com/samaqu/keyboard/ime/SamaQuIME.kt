@@ -20,6 +20,7 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.widget.doAfterTextChanged
 import androidx.recyclerview.widget.GridLayoutManager
@@ -45,6 +46,10 @@ import com.samaqu.keyboard.ui.TemplateAdapter
 import com.samaqu.keyboard.ui.VariantAdapter
 import com.samaqu.keyboard.util.Backspace
 import com.samaqu.keyboard.util.CalculatorEngine
+import com.samaqu.keyboard.util.InvoiceDraft
+import com.samaqu.keyboard.util.InvoiceFormatter
+import com.samaqu.keyboard.util.InvoiceItem
+import com.samaqu.keyboard.util.InvoiceShipping
 import com.samaqu.keyboard.util.SamaQuText
 import com.samaqu.keyboard.util.ShiftState
 import kotlinx.coroutines.CoroutineScope
@@ -121,6 +126,21 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
 
     /** Text field of the in-keyboard invoice form that currently receives typed keys. */
     private var focusedField: EditText? = null
+
+    /**
+     * The invoice being built: its product lines. The text fields (buyer, phone, address,
+     * shipping cost) are read from the views when needed, see [currentInvoice].
+     */
+    private var invoiceDraft = InvoiceDraft()
+
+    /** Courier option picked in the Ongkir panel; its cost can still be changed by hand. */
+    private var shippingChoice: InvoiceShipping? = null
+
+    /** Every invoice field that can take focus, so focusing one can un-highlight the rest. */
+    private val invoiceFields = mutableListOf<EditText>()
+
+    /** Marks the per-line price fields, which are rebuilt whenever the list is redrawn. */
+    private val itemPriceTag = "invoiceItemPrice"
 
     /**
      * Selection range the framework last reported for the current field (-1/-1 = nothing
@@ -318,33 +338,183 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
     }
 
     private fun setupInvoicePanel(view: View) {
-        val fields = listOf(
-            view.findViewById<EditText>(R.id.invBuyer),
-            view.findViewById<EditText>(R.id.invProduct),
-            view.findViewById<EditText>(R.id.invQty),
-            view.findViewById<EditText>(R.id.invPrice),
-            view.findViewById<EditText>(R.id.invOngkir)
-        )
-        fields.forEach { field ->
-            field.setOnTouchListener { _, event ->
-                if (event.action == android.view.MotionEvent.ACTION_DOWN) {
-                    focusedField = field
-                    fields.forEach { it.setBackgroundResource(R.drawable.field_bg) }
-                    field.setBackgroundResource(R.drawable.field_bg_active)
-                }
-                false
-            }
+        listOf(R.id.invBuyer, R.id.invPhone, R.id.invAddress, R.id.invOngkir).forEach { id ->
+            bindInvoiceField(view.findViewById(id))
         }
+        view.findViewById<EditText>(R.id.invOngkir).doAfterTextChanged { updateInvoiceTotal() }
+
+        view.findViewById<TextView>(R.id.btnInvoiceOngkir).setOnClickListener { showPanel(ongkirPanel) }
 
         view.findViewById<TextView>(R.id.invBtnGenerate).setOnClickListener {
-            val buyer = view.findViewById<EditText>(R.id.invBuyer).text.toString().trim()
-            val product = view.findViewById<EditText>(R.id.invProduct).text.toString().trim()
-            val qty = view.findViewById<EditText>(R.id.invQty).text.toString().toIntOrNull() ?: 1
-            val price = view.findViewById<EditText>(R.id.invPrice).text.toString().toDoubleOrNull() ?: 0.0
-            val ongkir = view.findViewById<EditText>(R.id.invOngkir).text.toString().toDoubleOrNull() ?: 0.0
-
-            commit(SamaQuText.keyboardInvoice(buyer, product, qty, price, ongkir))
+            val draft = currentInvoice(view)
+            if (draft.items.isEmpty()) {
+                Toast.makeText(this, R.string.invoice_need_item, Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            val prefs = Prefs(this)
+            commit(InvoiceFormatter.format(draft, prefs.paymentText, prefs.invoiceClosing))
+            resetInvoice(view)
             hideAllPanels()
+        }
+
+        renderInvoiceItems()
+    }
+
+    /** Makes [field] receive the keyboard's keys when touched, and highlights it alone. */
+    private fun bindInvoiceField(field: EditText) {
+        invoiceFields.add(field)
+        field.setOnTouchListener { _, event ->
+            if (event.action == android.view.MotionEvent.ACTION_DOWN) {
+                focusedField = field
+                invoiceFields.forEach { it.setBackgroundResource(R.drawable.field_bg) }
+                field.setBackgroundResource(R.drawable.field_bg_active)
+            }
+            false
+        }
+    }
+
+    /**
+     * The invoice as it stands: product lines from [invoiceDraft], everything else read from
+     * the fields. A blank shipping field means "no shipping line"; any number, even 0, writes one.
+     */
+    private fun currentInvoice(view: View): InvoiceDraft {
+        fun text(id: Int) = view.findViewById<EditText>(id).text.toString().trim()
+        val ongkir = text(R.id.invOngkir)
+        val shipping = if (ongkir.isEmpty()) null
+        else (shippingChoice ?: InvoiceShipping()).copy(cost = ongkir.filter { it.isDigit() }.toLongOrNull() ?: 0L)
+        return invoiceDraft.copy(
+            buyer = text(R.id.invBuyer),
+            phone = text(R.id.invPhone),
+            address = text(R.id.invAddress),
+            shipping = shipping
+        )
+    }
+
+    private fun updateInvoiceTotal() {
+        val view = rootView ?: return
+        view.findViewById<TextView>(R.id.invTotal).text =
+            getString(R.string.invoice_total, InvoiceFormatter.rupiah(currentInvoice(view).total))
+    }
+
+    /** Back to an empty form once an invoice has been sent. */
+    private fun resetInvoice(view: View) {
+        invoiceDraft = InvoiceDraft()
+        shippingChoice = null
+        listOf(R.id.invBuyer, R.id.invPhone, R.id.invAddress, R.id.invOngkir).forEach {
+            view.findViewById<EditText>(it).setText("")
+        }
+        view.findViewById<TextView>(R.id.invShippingLabel).visibility = View.GONE
+        releaseFocusedField()
+        renderInvoiceItems()
+    }
+
+    /** Redraws one row per product line (label, quantity buttons, unit price, remove). */
+    private fun renderInvoiceItems() {
+        val view = rootView ?: return
+        if (focusedField?.tag == itemPriceTag) releaseFocusedField()
+        invoiceFields.removeAll { it.tag == itemPriceTag }
+
+        val container = view.findViewById<LinearLayout>(R.id.invItemsContainer)
+        container.removeAllViews()
+        view.findViewById<View>(R.id.invItemsEmpty).visibility =
+            if (invoiceDraft.items.isEmpty()) View.VISIBLE else View.GONE
+
+        invoiceDraft.items.forEachIndexed { index, item ->
+            container.addView(
+                buildInvoiceItemRow(index, item),
+                LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                    .apply { bottomMargin = dp(8) }
+            )
+        }
+        updateInvoiceTotal()
+    }
+
+    private fun buildInvoiceItemRow(index: Int, item: InvoiceItem): View {
+        val primary = ContextCompat.getColor(this, R.color.text_primary)
+        val accent = ContextCompat.getColor(this, R.color.brand_purple)
+
+        fun smallButton(label: String, onTap: () -> Unit) = TextView(this).apply {
+            text = label
+            textSize = 16f
+            setTextColor(accent)
+            setTypeface(null, Typeface.BOLD)
+            gravity = Gravity.CENTER
+            setBackgroundResource(R.drawable.pill_bg)
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { onTap() }
+            layoutParams = LinearLayout.LayoutParams(dp(36), dp(32)).apply { marginStart = dp(6) }
+        }
+
+        val title = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            addView(
+                TextView(this@SamaQuIME).apply {
+                    text = item.label
+                    textSize = 12f
+                    setTextColor(primary)
+                    maxLines = 2
+                    ellipsize = android.text.TextUtils.TruncateAt.END
+                },
+                LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT).apply { weight = 1f }
+            )
+            addView(smallButton("✕") {
+                invoiceDraft = invoiceDraft.withoutItem(index)
+                renderInvoiceItems()
+            })
+        }
+
+        val priceField = EditText(this).apply {
+            tag = itemPriceTag
+            inputType = InputType.TYPE_CLASS_NUMBER
+            setText(item.unitPrice.toString())
+            textSize = 13f
+            setTextColor(primary)
+            setBackgroundResource(R.drawable.field_bg)
+            setPadding(dp(10), 0, dp(10), 0)
+            importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO
+            contentDescription = getString(R.string.invoice_item_price)
+            // After setText, so the initial value does not count as an edit.
+            doAfterTextChanged {
+                invoiceDraft = invoiceDraft.withUnitPrice(index, it?.toString()?.toLongOrNull() ?: 0L)
+                updateInvoiceTotal()
+            }
+        }
+        bindInvoiceField(priceField)
+
+        val controls = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(6), 0, 0)
+            addView(smallButton("−") {
+                invoiceDraft = invoiceDraft.withQty(index, item.qty - 1)
+                renderInvoiceItems()
+            }.apply { (layoutParams as LinearLayout.LayoutParams).marginStart = 0 })
+            addView(
+                TextView(this@SamaQuIME).apply {
+                    text = item.qty.toString()
+                    textSize = 13f
+                    setTextColor(primary)
+                    setTypeface(null, Typeface.BOLD)
+                    gravity = Gravity.CENTER
+                },
+                LinearLayout.LayoutParams(dp(34), ViewGroup.LayoutParams.WRAP_CONTENT)
+            )
+            addView(smallButton("+") {
+                invoiceDraft = invoiceDraft.withQty(index, item.qty + 1)
+                renderInvoiceItems()
+            })
+            addView(View(this@SamaQuIME), LinearLayout.LayoutParams(0, 1).apply { weight = 1f })
+            addView(priceField, LinearLayout.LayoutParams(dp(120), dp(36)))
+        }
+
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundResource(R.drawable.card_bg)
+            setPadding(dp(12), dp(8), dp(8), dp(8))
+            addView(title)
+            addView(controls)
         }
     }
 
@@ -477,10 +647,19 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         )
     }
 
-    /** Puts a quoted cost into the invoice form and switches to it. */
+    /** Puts a quoted cost, with its courier service and estimate, into the invoice and switches to it. */
     private fun useOngkir(option: JntCostOption) {
         val view = rootView ?: return
+        shippingChoice = InvoiceShipping(option.courier, option.service, option.etd, option.cost)
         view.findViewById<EditText>(R.id.invOngkir).setText(option.cost.toString())
+        view.findViewById<TextView>(R.id.invShippingLabel).apply {
+            text = buildString {
+                append(option.courier.trim())
+                if (option.service.isNotBlank()) append(' ').append(option.service.trim())
+                if (option.etd.isNotBlank()) append(" • ").append(option.etd.trim())
+            }
+            visibility = View.VISIBLE
+        }
         showPanel(invoicePanel)
     }
 
@@ -823,22 +1002,21 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
     }
 
     /**
-     * Fills the invoice from a picked product and, when there is one, its size.
-     *
-     * The price is only written when the catalogue has one, so a 0 in the table cannot
-     * silently blank a figure the CS already typed.
+     * Adds a picked product (and its size, when there is one) as a line of the invoice.
+     * Picking the same product and size again raises that line's quantity instead of adding
+     * a duplicate row.
      */
     private fun applyProductToInvoice(product: CachedProduct, variant: CachedVariant?) {
-        val view = rootView ?: return
         releaseFocusedField()
 
-        view.findViewById<EditText>(R.id.invProduct)
-            .setText(SamaQuText.variantLabel(product, variant))
-
-        val price = SamaQuText.priceOf(product, variant)
-        if (price > 0) {
-            view.findViewById<EditText>(R.id.invPrice).setText(price.toString())
+        val label = SamaQuText.invoiceLineLabel(product, variant)
+        val existing = invoiceDraft.items.indexOfFirst { it.label == label }
+        invoiceDraft = if (existing >= 0) {
+            invoiceDraft.withQty(existing, invoiceDraft.items[existing].qty + 1)
+        } else {
+            invoiceDraft.withItem(InvoiceItem(label, 1, SamaQuText.priceOf(product, variant)))
         }
+        renderInvoiceItems()
 
         showProductListStep()
         showPanel(invoicePanel)
