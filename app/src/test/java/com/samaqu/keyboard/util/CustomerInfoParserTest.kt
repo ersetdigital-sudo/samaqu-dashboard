@@ -83,4 +83,53 @@ class CustomerInfoParserTest {
         assertEquals("", info.phone)
         assertEquals("", info.address)
     }
+
+    // --------------------------------------------- name and number on the same line
+
+    @Test
+    fun `name and number on one line, address below`() {
+        val info = parse(
+            "Surya 085603324143\n" +
+                "Jalan Komplek Marinir Rt 002/Rw 004 No 1 Rangkapan Jaya Baru, Pangkalan Gas Elpiji, " +
+                "Rumah Pagar Hitam Putih, KOTA DEPOK, PANCORAN MAS, JAWA BARAT, ID, 16431"
+        )
+
+        assertEquals("Surya", info.name)
+        assertEquals("085603324143", info.phone)
+        assertEquals(
+            "Jalan Komplek Marinir Rt 002/Rw 004 No 1 Rangkapan Jaya Baru, Pangkalan Gas Elpiji, " +
+                "Rumah Pagar Hitam Putih, KOTA DEPOK, PANCORAN MAS, JAWA BARAT, ID, 16431",
+            info.address
+        )
+    }
+
+    @Test
+    fun `a word such as WA or a comma next to the number is not part of the name`() {
+        assertEquals("Surya", parse("Surya WA 085603324143\nJl. Mawar 3").name)
+        assertEquals("Budi Santoso", parse("Budi Santoso, 0812-3456-789\nJl. Mawar 3").name)
+        assertEquals("08123456789", parse("Budi Santoso, 0812-3456-789\nJl. Mawar 3").phone)
+    }
+
+    @Test
+    fun `a country-code number on the name line is made local`() {
+        val info = parse("Andi +62 812-3456-789\nJl. X 1")
+
+        assertEquals("Andi", info.name)
+        assertEquals("08123456789", info.phone)
+        assertEquals("Jl. X 1", info.address)
+    }
+
+    @Test
+    fun `numbers inside the address are not taken for the phone`() {
+        val info = parse("Surya 085603324143\nJl. Mawar Rt 002/Rw 004 No 1, Depok 16431")
+
+        assertEquals("085603324143", info.phone)
+        assertEquals("Jl. Mawar Rt 002/Rw 004 No 1, Depok 16431", info.address)
+    }
+
+    @Test
+    fun `a short number such as a postal code is not a phone`() {
+        assertTrue(parse("Halo 16431").isEmpty)
+        assertTrue(parse("Stok thobe M ada 5 pcs?").isEmpty)
+    }
 }

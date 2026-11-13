@@ -75,22 +75,51 @@ object CustomerInfoParser {
         return if (seenKnown) CustomerInfo(name, phone, address.joinToString(", ")) else null
     }
 
+    /**
+     * Unlabelled text: the first line holding a phone number decides. The number may sit alone
+     * on its line or follow the name (`Surya 085603324143`); whatever else is on that line is the
+     * name, the line above it is the name when none was found there, and everything else is the
+     * address.
+     */
     private fun bare(lines: List<String>): CustomerInfo? {
         val filled = lines.filter { it.isNotEmpty() }
-        val phoneAt = filled.indexOfFirst(::looksLikePhone)
+        val phoneAt = filled.indexOfFirst { phoneIn(it) != null }
         if (phoneAt < 0) return null
 
+        val line = filled[phoneAt]
+        val phone = phoneIn(line)!!
         val before = filled.take(phoneAt)
         val after = filled.drop(phoneAt + 1)
-        val name = before.firstOrNull()?.takeIf { l -> l.none { it.isDigit() } && l.length <= 40 }.orEmpty()
-        val address = (if (name.isNotEmpty()) before.drop(1) else before) + after
 
-        return CustomerInfo(name, normalizePhone(filled[phoneAt]), address.joinToString(", "))
+        var name = nameAround(line, phone)
+        var addressBefore = before
+        if (name.isEmpty()) {
+            val above = before.firstOrNull()?.takeIf { looksLikeName(it) }
+            if (above != null) {
+                name = above
+                addressBefore = before.drop(1)
+            }
+        }
+        return CustomerInfo(name, normalizePhone(phone), (addressBefore + after).joinToString(", "))
     }
 
-    /** A line made only of phone-number characters, with enough digits to be a real number. */
-    private fun looksLikePhone(line: String): Boolean =
-        line.count { it.isDigit() } >= 9 && line.all { it.isDigit() || it in " +-().," }
+    /** A number that starts with 0 or 62 and has 9-15 digits, spaces or dashes between them allowed. */
+    private val phoneToken = Regex("(?<!\\d)(?:\\+?62|0)[\\s-]?\\d(?:[\\s-]?\\d){7,13}(?!\\d)")
+
+    private fun phoneIn(line: String): String? =
+        phoneToken.findAll(line).map { it.value }.firstOrNull { token -> token.count { it.isDigit() } in 9..15 }
+
+    /** What is left of [line] once the [phone] and words like "WA" or "HP" are taken out. */
+    private fun nameAround(line: String, phone: String): String {
+        val rest = line.replace(phone, " ")
+            .replace(Regex("(?i)\\b(wa|whatsapp|hp|handphone|no|nomor|telp|tlp|telepon)\\b"), " ")
+            .trim(' ', ',', ';', ':', '-', '/', '|', '(', ')')
+            .replace(Regex("\\s+"), " ")
+        return if (looksLikeName(rest)) rest else ""
+    }
+
+    private fun looksLikeName(text: String): Boolean =
+        text.isNotEmpty() && text.length <= 40 && text.none { it.isDigit() }
 
     /** Digits only, with the country code written as the local leading zero. */
     private fun normalizePhone(raw: String): String {
