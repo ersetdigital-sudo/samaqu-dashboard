@@ -19,6 +19,7 @@ import android.view.inputmethod.InputConnection
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
@@ -200,6 +201,15 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         val view = layoutInflater.inflate(R.layout.keyboard_main, null)
         rootView = view
 
+        // A rebuilt view (rotation, key-size change) starts from a clean invoice form: nothing
+        // tied to the old views may leak into it, such as a focused price field that no longer
+        // exists or a courier picked in a form that has just been emptied.
+        focusedField = null
+        numberDeckForced = false
+        invoiceFields.clear()
+        shippingChoice = null
+        invoiceDraft = InvoiceDraft()
+
         val keySize = Prefs(this).keySize
         appliedKeySize = keySize
         qwerty = Keyboard(
@@ -342,7 +352,15 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         listOf(R.id.invBuyer, R.id.invPhone, R.id.invAddress, R.id.invOngkir).forEach { id ->
             bindInvoiceField(view.findViewById(id))
         }
-        view.findViewById<EditText>(R.id.invOngkir).doAfterTextChanged { updateInvoiceTotal() }
+        view.findViewById<EditText>(R.id.invOngkir).doAfterTextChanged {
+            // Emptying the field drops a courier picked earlier, so a new amount typed after
+            // that cannot be printed under the old service name.
+            if (it.isNullOrBlank()) {
+                shippingChoice = null
+                view.findViewById<TextView>(R.id.invShippingLabel).visibility = View.GONE
+            }
+            updateInvoiceTotal()
+        }
 
         view.findViewById<TextView>(R.id.btnInvoiceOngkir).setOnClickListener { showPanel(ongkirPanel) }
 
@@ -353,7 +371,13 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
                 return@setOnClickListener
             }
             val prefs = Prefs(this)
-            commit(InvoiceFormatter.format(draft, prefs.paymentText, prefs.invoiceClosing))
+            val text = InvoiceFormatter.format(draft, prefs.paymentText, prefs.invoiceClosing)
+            // Only clear the form once the text really reached the chat: with no input
+            // connection nothing is sent, and the whole invoice would be lost.
+            if (currentInputConnection?.commitText(text, 1) != true) {
+                Toast.makeText(this, R.string.invoice_send_failed, Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
             resetInvoice(view)
             hideAllPanels()
         }
@@ -381,14 +405,11 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
      */
     private fun currentInvoice(view: View): InvoiceDraft {
         fun text(id: Int) = view.findViewById<EditText>(id).text.toString().trim()
-        val ongkir = text(R.id.invOngkir)
-        val shipping = if (ongkir.isEmpty()) null
-        else (shippingChoice ?: InvoiceShipping()).copy(cost = ongkir.filter { it.isDigit() }.toLongOrNull() ?: 0L)
         return invoiceDraft.copy(
             buyer = text(R.id.invBuyer),
             phone = text(R.id.invPhone),
             address = text(R.id.invAddress),
-            shipping = shipping
+            shipping = InvoiceFormatter.shippingFor(text(R.id.invOngkir), shippingChoice)
         )
     }
 
@@ -415,6 +436,12 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         val view = rootView ?: return
         if (focusedField?.tag == itemPriceTag) releaseFocusedField()
         invoiceFields.removeAll { it.tag == itemPriceTag }
+
+        // Rebuilding drops the view that held Android focus, and the ScrollView would then jump
+        // to the first field; remember where the CS was and go back there afterwards.
+        val scroll = view.findViewById<ScrollView>(R.id.invScroll)
+        val scrollY = scroll.scrollY
+        scroll.post { scroll.scrollTo(0, scrollY) }
 
         val container = view.findViewById<LinearLayout>(R.id.invItemsContainer)
         container.removeAllViews()

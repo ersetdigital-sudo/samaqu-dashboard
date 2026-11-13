@@ -198,4 +198,5 @@
     <string name="invoice_total">Total: %1$s</string>
     <string name="invoice_need_item">Pilih minimal satu produk</string>
     <string name="invoice_item_price">Harga satuan</string>
+    <string name="invoice_send_failed">Belum terkirim ke chat. Ketuk kolom ketik di chat lalu coba lagi.</string>
 </resources>

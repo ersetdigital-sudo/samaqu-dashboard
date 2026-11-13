@@ -93,6 +93,26 @@ object InvoiceFormatter {
             }
 
     /**
+     * What to store after a catalogue sync: [fetched] is the list the server returned, or null
+     * when the request failed. A failure keeps the text already on the phone, but a successful
+     * answer is the truth even when it is empty - an account the owner deactivated must stop
+     * appearing on invoices.
+     */
+    fun paymentTextAfterSync(fetched: List<PaymentMethod>?, current: String): String =
+        if (fetched == null) current else paymentText(fetched)
+
+    /**
+     * The shipping line for the cost the CS sees in the field. A blank field means no shipping
+     * line at all (and forgets a courier picked earlier); otherwise the amount replaces the cost
+     * of the [choice] picked in the Ongkir panel, or stands alone when none was picked.
+     */
+    fun shippingFor(costText: String, choice: InvoiceShipping?): InvoiceShipping? {
+        if (costText.isBlank()) return null
+        val cost = costText.filter { it.isDigit() }.toLongOrNull() ?: 0L
+        return (choice ?: InvoiceShipping()).copy(cost = cost)
+    }
+
+    /**
      * The whole invoice. [paymentText] is the bank block (already multi-line) and [closing]
      * the last sentence; either may be blank, in which case its section is left out.
      */

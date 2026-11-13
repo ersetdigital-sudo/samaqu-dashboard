@@ -145,3 +145,9 @@ Sebelum mulai: buka Settings app, pastikan Supabase URL berisi `https://bzoitgiv
 - [ ] Mengubah "Kalimat penutup invoice" di Settings mengubah baris terakhir invoice; mengosongkannya menghilangkan baris itu.
 - [ ] Mengetuk kolom **No. WA**, **Ongkir**, atau **harga satuan** langsung memunculkan dek angka (baris 1–0); mengetuk **Nama pembeli** atau **Alamat** memunculkan huruf.
 - [ ] Menekan Enter atau menutup panel setelah mengisi kolom angka mengembalikan dek ke huruf. Memakai dek simbol sendiri di chat biasa tidak ikut berubah.
+- [ ] Ubah harga satuan sebuah produk, lalu tekan + atau − : daftar tidak melompat ke Nama pembeli.
+- [ ] Pilih ongkir lewat "Pakai", lalu kosongkan kolom Ongkir dan ketik angka baru: label layanan hilang dan invoice hanya menulis `Ongkir: Rp…`.
+- [ ] Putar layar atau ganti ukuran tombol saat panel Invoice terbuka: formulir kembali kosong dan tidak ada angka yang salah masuk ke invoice.
+- [ ] Tekan Generate saat kolom chat tidak aktif: muncul pesan "Belum terkirim", formulir tidak dikosongkan.
+- [ ] Setelah update dari versi lama, buka picker sebelum sync selesai: katalog tidak menampilkan harga lama (kosong atau memuat dulu).
+- [ ] Lihat format estimasi asli dari Cek Ongkir (apakah `3-7` atau `3-7 hari`) dan pastikan baris ongkir invoice terbaca wajar.

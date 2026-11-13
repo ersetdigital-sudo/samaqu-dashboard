@@ -199,4 +199,48 @@ class InvoiceFormatterTest {
         assertEquals("", InvoiceFormatter.paymentText(emptyList()))
         assertEquals("", InvoiceFormatter.paymentText(listOf(PaymentMethod(methodType = "mayar"))))
     }
+
+    // ------------------------------------------------- stored bank text after a sync
+
+    private val oldBank = "Bank Lama 111\na.n. Lama"
+
+    @Test
+    fun `a failed fetch keeps the stored bank text`() {
+        assertEquals(oldBank, InvoiceFormatter.paymentTextAfterSync(null, oldBank))
+    }
+
+    @Test
+    fun `a successful fetch replaces the stored bank text`() {
+        val fetched = listOf(bank("Bank BSI", "7153280058", "Ardo Babus Abdullah"))
+
+        assertEquals(
+            "Bank BSI 7153280058\na.n. Ardo Babus Abdullah",
+            InvoiceFormatter.paymentTextAfterSync(fetched, oldBank)
+        )
+    }
+
+    @Test
+    fun `a successful fetch with no active bank clears the stored text`() {
+        assertEquals("", InvoiceFormatter.paymentTextAfterSync(emptyList(), oldBank))
+        assertEquals("", InvoiceFormatter.paymentTextAfterSync(listOf(bank("X", null, "Y")), oldBank))
+    }
+
+    // ------------------------------------------------------------ chosen courier
+
+    @Test
+    fun `a blank cost field means no shipping line even after a courier was picked`() {
+        assertEquals(null, InvoiceFormatter.shippingFor("", eco))
+        assertEquals(null, InvoiceFormatter.shippingFor("  ", null))
+    }
+
+    @Test
+    fun `a typed cost keeps the picked courier and replaces only the amount`() {
+        assertEquals(eco.copy(cost = 45_000), InvoiceFormatter.shippingFor("45000", eco))
+    }
+
+    @Test
+    fun `a typed cost without a picked courier is a plain ongkir line`() {
+        assertEquals(InvoiceShipping(cost = 12_000), InvoiceFormatter.shippingFor("12.000", null))
+        assertEquals(InvoiceShipping(cost = 0), InvoiceFormatter.shippingFor("0", null))
+    }
 }

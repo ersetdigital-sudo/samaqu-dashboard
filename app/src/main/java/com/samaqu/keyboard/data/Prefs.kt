@@ -41,6 +41,11 @@ class Prefs(ctx: Context) {
         get() = sp.getString(KEY_PAYMENT_TEXT, "") ?: ""
         set(v) = sp.edit().putString(KEY_PAYMENT_TEXT, v).apply()
 
+    /** The Supabase URL the cached catalogue was last synced from; null until a sync succeeds. */
+    var catalogueSource: String?
+        get() = sp.getString(KEY_CATALOGUE_SOURCE, null)
+        set(v) = sp.edit().putString(KEY_CATALOGUE_SOURCE, v).apply()
+
     /**
      * Last sentence of an invoice. [InvoiceFormatter.DEFAULT_CLOSING] until the owner saves
      * something; an empty value saved on purpose stays empty (the sentence is then left out).
@@ -90,6 +95,7 @@ class Prefs(ctx: Context) {
         private const val KEY_LAST_PENDING = "last_pending"
         private const val KEY_PAYMENT_TEXT = "payment_text"
         private const val KEY_INVOICE_CLOSING = "invoice_closing"
+        private const val KEY_CATALOGUE_SOURCE = "catalogue_source"
         private const val KEY_KEY_SIZE = "key_size"
         private const val KEY_DASHBOARD_URL = "dashboard_url"
         private const val KEY_OVERLAY_ENABLED = "overlay_enabled"

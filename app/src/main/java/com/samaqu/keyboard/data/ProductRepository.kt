@@ -6,6 +6,7 @@ import com.samaqu.keyboard.network.Product
 import com.samaqu.keyboard.network.RetrofitClient
 import com.samaqu.keyboard.network.Variant
 import com.samaqu.keyboard.util.InvoiceFormatter
+import com.samaqu.keyboard.util.SavedSettings
 
 /**
  * The store's product catalogue, for the invoice's product picker.
@@ -19,13 +20,20 @@ class ProductRepository(ctx: Context) {
     private val dao: ProductDao = AppDatabase.get(ctx).productDao()
     private val prefs = Prefs(ctx)
 
+    /**
+     * True while the cache was filled from the project the app currently reads. After the app
+     * is pointed at another project (or upgraded from a build that never recorded one), the
+     * old rows carry old prices and no fabric codes, so they must not reach an invoice.
+     */
+    private fun cacheIsCurrent(): Boolean = SavedSettings.sameUrl(prefs.catalogueSource, prefs.supabaseUrl)
+
     /** Cached catalogue, cheapest first call and the one used while a refresh runs. */
-    suspend fun getProducts(): List<CachedProduct> = dao.getAll()
+    suspend fun getProducts(): List<CachedProduct> = if (cacheIsCurrent()) dao.getAll() else emptyList()
 
     /** Cached size/colour/stock grid for every product. */
-    suspend fun getVariants(): List<CachedVariant> = dao.getAllVariants()
+    suspend fun getVariants(): List<CachedVariant> = if (cacheIsCurrent()) dao.getAllVariants() else emptyList()
 
-    suspend fun count(): Int = dao.count()
+    suspend fun count(): Int = if (cacheIsCurrent()) dao.count() else 0
 
     /**
      * Pulls `public.products` and `public.product_variants` from Supabase.
@@ -44,12 +52,13 @@ class ProductRepository(ctx: Context) {
         dao.clearVariants()
         dao.insertVariants(variants.map { it.toCached() })
 
-        // The bank accounts for invoices ride along with the catalogue sync, but a failure here
-        // must neither fail the sync nor wipe the accounts already stored on the phone.
-        runCatching { InvoiceFormatter.paymentText(client.getPaymentMethods()) }
-            .getOrNull()
-            ?.takeIf { it.isNotBlank() }
-            ?.let { prefs.paymentText = it }
+        prefs.catalogueSource = prefs.supabaseUrl
+
+        // The bank accounts for invoices ride along with the catalogue sync. A failed request
+        // must neither fail the sync nor wipe the accounts already stored on the phone, but a
+        // successful answer is authoritative: an account the owner deactivated disappears.
+        val banks = runCatching { client.getPaymentMethods() }.getOrNull()
+        prefs.paymentText = InvoiceFormatter.paymentTextAfterSync(banks, prefs.paymentText)
     }
 
     private fun api(): ApiService {
