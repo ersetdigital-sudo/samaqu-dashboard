@@ -7,6 +7,39 @@ you got here. This file is that context.
 
 ---
 
+## 0. Latest work (2026-11-13) — start here
+
+The invoice builder was rebuilt and the app moved to the store's own database. Read these two
+files first; they hold the reasoning, the exact invoice format and the device checklist:
+
+- Design: `docs/superpowers/specs/2026-11-13-invoice-multi-produk-design.md`
+- Plan that was executed: `docs/superpowers/plans/2026-11-13-invoice-multi-produk.md`
+
+What changed, in short: the app reads `SAMAQU WEBSITE` (`bzoit…`, see §2); the invoice is
+multi-product and printed in the team's own format (`InvoiceFormatter`); customer data can be
+filled from a pasted message (`CustomerInfoParser`, the "Tempel format" button); numeric fields
+get a digits-only keypad (`numpad*.xml`); the toolbar hides while a panel is open.
+
+State right now:
+
+- 147 JVM tests are green. The code was written without a phone attached; the **owner has run
+  the APK on their own phone** and an invoice came out in the right shape, but panel layout and
+  typing feel were only judged from their screenshots. Work through the "Cek manual di HP" list
+  in the design doc before calling anything done.
+- **Open, unexplained: "Cek Ongkir" failed on the owner's phone.** The store endpoint
+  (`POST /api/shipping/jnt-cost`) was verified fine with curl, and the panel code barely changed,
+  so the real error text and the district/city typed are still needed.
+- Not built from the owner's reference app (Selly): invoice history, CRM, a separate "RINCIAN"
+  breakdown. Those need the storage decision in §5.
+- Deferred review minors: panel height may hide Alamat without scrolling; fields take focus on
+  touch-down so a scroll starting on a number field flips the deck; picking the same product
+  again keeps an edited price; no max length on a price field; Settings Save freezes the current
+  default closing sentence.
+- `release/SAMAQU-Lite-v1.0.1.apk` was refreshed from this state (same file name, still
+  `versionName 1.0.1` / `versionCode 2`, debug build, ~7 MB); it installs over the older one.
+
+---
+
 ## 1. What actually works, and what has never been run
 
 | | State |
@@ -223,7 +256,7 @@ Rules that exist for reasons:
 - Line endings: `.gitattributes` normalises to LF in the repository.
 - `release/SAMAQU-Lite-v1.0.1.apk` is committed **on purpose** so a clone has something to
   install without building. It is deliberately the **debug** build, byte-identical to
-  `app/build/outputs/apk/lite/debug/app-lite-debug.apk` (~10.6 MB), because that is the
+  `app/build/outputs/apk/lite/debug/app-lite-debug.apk` (~7 MB since 2026-11-13), because that is the
   APK the team actually sideloads — a size mismatch reads as "wrong version" and gets the
   shipped file distrusted. The release build (`.../lite/release/app-lite-release.apk`,
   ~5.9 MB) carries the same code (`isMinifyEnabled = false`) and signs with the same
