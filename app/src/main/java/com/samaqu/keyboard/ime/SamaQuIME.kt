@@ -49,6 +49,7 @@ import com.samaqu.keyboard.ui.VariantAdapter
 import com.samaqu.keyboard.util.Backspace
 import com.samaqu.keyboard.util.AreaParser
 import com.samaqu.keyboard.util.CalculatorEngine
+import com.samaqu.keyboard.util.CommitCheck
 import com.samaqu.keyboard.util.CustomerInfoParser
 import com.samaqu.keyboard.util.FieldInput
 import com.samaqu.keyboard.util.FieldOrder
@@ -394,8 +395,12 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
             val prefs = Prefs(this)
             val text = InvoiceFormatter.format(draft, prefs.paymentText, prefs.invoiceClosing)
             // Only clear the form once the text really reached the chat: with no input
-            // connection nothing is sent, and the whole invoice would be lost.
-            if (currentInputConnection?.commitText(text, 1) != true) {
+            // connection nothing is sent, and the whole invoice would be lost. commitText's own
+            // answer is not enough, some chat editors say false although the text went in.
+            val ic = currentInputConnection
+            val returned = ic?.commitText(text, 1)
+            val tail = if (returned == false) ic?.getTextBeforeCursor(text.length, 0)?.toString() else null
+            if (!CommitCheck.inserted(returned, tail, text)) {
                 Toast.makeText(this, R.string.invoice_send_failed, Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
