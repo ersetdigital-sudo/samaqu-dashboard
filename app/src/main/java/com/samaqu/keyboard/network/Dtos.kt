@@ -129,6 +129,8 @@ data class JntCostRequest(
 data class JntCostOption(
     val courier: String = "",
     val service: String = "",
+    /** Short service code the store sends next to the long name, e.g. `ECO` or `EZ`. */
+    val serviceCode: String = "",
     val description: String = "",
     val cost: Long = 0,
     val etd: String = ""

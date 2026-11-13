@@ -1,5 +1,6 @@
 package com.samaqu.keyboard.util
 
+import com.samaqu.keyboard.network.JntCostOption
 import com.samaqu.keyboard.network.PaymentMethod
 
 /** One line of an invoice: what was ordered, how many, and the price of one. */
@@ -51,6 +52,13 @@ data class InvoiceDraft(
 }
 
 /**
+ * A quoted option as the invoice names it: courier plus the short service code (`ECO`), which
+ * is how the team writes it; the long name is only the fallback when no code came with it.
+ */
+fun JntCostOption.toInvoiceShipping(): InvoiceShipping =
+    InvoiceShipping(courier, serviceCode.ifBlank { service }, etd, cost)
+
+/**
  * Writes the invoice text the sales team sends to customers.
  *
  * The layout mirrors the invoice the team used to type by hand; see the "Latar belakang"
@@ -65,7 +73,11 @@ object InvoiceFormatter {
 
     /** `Ongkir J&T ECO (estimasi 3-7 hari): Rp40.500`, tidied when courier, service or estimate is missing. */
     fun shippingLine(s: InvoiceShipping): String {
-        val name = listOf(s.courier, s.service).map { it.trim() }.filter { it.isNotEmpty() }.joinToString(" ")
+        val courier = s.courier.trim()
+        val service = s.service.trim()
+        // The store's long service name can already start with the courier ("J&T ECO (Hemat)").
+        val name = if (service.startsWith(courier, ignoreCase = true)) service
+        else listOf(courier, service).filter { it.isNotEmpty() }.joinToString(" ")
         val etd = s.etd.trim()
         return buildString {
             append("Ongkir")

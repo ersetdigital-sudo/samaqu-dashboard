@@ -1,5 +1,7 @@
 package com.samaqu.keyboard.util
 
+import com.google.gson.Gson
+import com.samaqu.keyboard.network.JntCostOption
 import com.samaqu.keyboard.network.PaymentMethod
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -242,5 +244,36 @@ class InvoiceFormatterTest {
     fun `a typed cost without a picked courier is a plain ongkir line`() {
         assertEquals(InvoiceShipping(cost = 12_000), InvoiceFormatter.shippingFor("12.000", null))
         assertEquals(InvoiceShipping(cost = 0), InvoiceFormatter.shippingFor("0", null))
+    }
+
+    // ------------------------------------------- the store's real ongkir answer
+
+    private fun option(json: String): JntCostOption = Gson().fromJson(json, JntCostOption::class.java)
+
+    private val realEco = """{"courier":"J&T","service":"J&T ECO (Hemat)","serviceCode":"ECO",
+        "description":"Layanan ECO J&T","cost":40500,"etd":"3-7 hari"}"""
+
+    @Test
+    fun `the store's ECO answer becomes the line the team writes`() {
+        val shipping = option(realEco).toInvoiceShipping()
+
+        assertEquals("Ongkir J&T ECO (estimasi 3-7 hari): Rp40.500", InvoiceFormatter.shippingLine(shipping))
+    }
+
+    @Test
+    fun `without a service code the long service name is used without repeating the courier`() {
+        val shipping = option(
+            """{"courier":"J&T","service":"J&T EZ (Reguler)","cost":58000,"etd":"2-4 hari"}"""
+        ).toInvoiceShipping()
+
+        assertEquals("Ongkir J&T EZ (Reguler) (estimasi 2-4 hari): Rp58.000", InvoiceFormatter.shippingLine(shipping))
+    }
+
+    @Test
+    fun `shippingLine does not repeat a courier that the service already starts with`() {
+        assertEquals(
+            "Ongkir J&T ECO: Rp40.500",
+            InvoiceFormatter.shippingLine(InvoiceShipping("J&T", "J&T ECO", "", 40_500))
+        )
     }
 }

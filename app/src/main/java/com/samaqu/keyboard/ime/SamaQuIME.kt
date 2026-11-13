@@ -54,6 +54,7 @@ import com.samaqu.keyboard.util.InvoiceItem
 import com.samaqu.keyboard.util.InvoiceShipping
 import com.samaqu.keyboard.util.SamaQuText
 import com.samaqu.keyboard.util.ShiftState
+import com.samaqu.keyboard.util.toInvoiceShipping
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -681,7 +682,7 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
     /** Puts a quoted cost, with its courier service and estimate, into the invoice and switches to it. */
     private fun useOngkir(option: JntCostOption) {
         val view = rootView ?: return
-        shippingChoice = InvoiceShipping(option.courier, option.service, option.etd, option.cost)
+        shippingChoice = option.toInvoiceShipping()
         view.findViewById<EditText>(R.id.invOngkir).setText(option.cost.toString())
         view.findViewById<TextView>(R.id.invShippingLabel).apply {
             text = buildString {
