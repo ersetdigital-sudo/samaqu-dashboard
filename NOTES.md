@@ -18,17 +18,22 @@ files first; they hold the reasoning, the exact invoice format and the device ch
 What changed, in short: the app reads `SAMAQU WEBSITE` (`bzoit…`, see §2); the invoice is
 multi-product and printed in the team's own format (`InvoiceFormatter`); customer data can be
 filled from a pasted message (`CustomerInfoParser`, the "Tempel format" button); numeric fields
-get a digits-only keypad (`numpad*.xml`); the toolbar hides while a panel is open.
+get a digits-only keypad (`numpad*.xml`); money fields show thousands dots (`MoneyInput`);
+product lines are saved read-only rows with an "Ubah" button; the toolbar hides while a panel is
+open.
 
 State right now:
 
-- 147 JVM tests are green. The code was written without a phone attached; the **owner has run
+- 171 JVM tests are green. The code was written without a phone attached; the **owner has run
   the APK on their own phone** and an invoice came out in the right shape, but panel layout and
   typing feel were only judged from their screenshots. Work through the "Cek manual di HP" list
   in the design doc before calling anything done.
-- **Open, unexplained: "Cek Ongkir" failed on the owner's phone.** The store endpoint
-  (`POST /api/shipping/jnt-cost`) was verified fine with curl, and the panel code barely changed,
-  so the real error text and the district/city typed are still needed.
+- Cek Ongkir: the owner reported it "didn't work"; their screenshot showed empty Kecamatan/Kota
+  fields and the fixed 1000 g default weight. It now pre-fills the district and city from the
+  invoice address (`AreaParser`) and the weight from the products (`InvoiceDraft.totalWeightGram`,
+  grams, from `weight` on products and variants). The store endpoint itself was verified with
+  curl: it returns ECO and EZ when the district supports ECO, only EZ otherwise. Still worth one
+  confirmation on the phone.
 - Not built from the owner's reference app (Selly): invoice history, CRM, a separate "RINCIAN"
   breakdown. Those need the storage decision in §5.
 - Deferred review minors: panel height may hide Alamat without scrolling; fields take focus on
