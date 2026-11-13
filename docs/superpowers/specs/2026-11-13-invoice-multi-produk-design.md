@@ -160,3 +160,5 @@ Sebelum mulai: buka Settings app, pastikan Supabase URL berisi `https://bzoitgiv
 - [ ] Saat panel apa pun terbuka (Invoice, Ongkir, Auto Text, Pending, emoji, kalkulator, picker), baris ikon toolbar hilang; menekan ✕ memunculkannya lagi.
 - [ ] Di form Invoice, Enter berpindah Nama → No. WA → Alamat → Ongkir; kolom yang sedang diketik selalu terlihat; Total dan tombol Generate berada dalam satu baris.
 - [ ] Salin pesan customer yang berisi `Nama:`, `No. WA:`, `Alamat:` lalu tekan **Tempel format** di panel Invoice: nama, WA (digit saja, 62/+62 jadi 0), dan alamat terisi; salinan kosong atau tanpa data menampilkan pesan.
+- [ ] Ketik di kolom **Ongkir** atau **harga satuan**: angka otomatis diberi titik ribuan (`9000` jadi `9.000`), dan total serta invoice memakai angka yang benar.
+- [ ] Pilih produk: barisnya terbuka (− qty +, harga, **Simpan**); tekan **Simpan** dan baris jadi ringkas read-only (`1 x Rp359.000` dan total baris). **Ubah** membukanya lagi; memilih produk lain menyimpan baris sebelumnya otomatis.

@@ -55,6 +55,7 @@ import com.samaqu.keyboard.util.InvoiceDraft
 import com.samaqu.keyboard.util.InvoiceFormatter
 import com.samaqu.keyboard.util.InvoiceItem
 import com.samaqu.keyboard.util.InvoiceShipping
+import com.samaqu.keyboard.util.MoneyInput
 import com.samaqu.keyboard.util.SamaQuText
 import com.samaqu.keyboard.util.ShiftState
 import com.samaqu.keyboard.util.toInvoiceShipping
@@ -145,6 +146,9 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
     /** Courier option picked in the Ongkir panel; its cost can still be changed by hand. */
     private var shippingChoice: InvoiceShipping? = null
 
+    /** Index of the product line that is open for editing; every other line is a saved, read-only row. */
+    private var editingItem: Int? = null
+
     /** Every invoice field that can take focus, so focusing one can un-highlight the rest. */
     private val invoiceFields = mutableListOf<EditText>()
 
@@ -215,6 +219,7 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         numberDeckForced = false
         invoiceFields.clear()
         shippingChoice = null
+        editingItem = null
         invoiceDraft = InvoiceDraft()
 
         val keySize = Prefs(this).keySize
@@ -367,6 +372,7 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         listOf(R.id.invBuyer, R.id.invPhone, R.id.invAddress, R.id.invOngkir).forEach { id ->
             bindInvoiceField(view.findViewById(id))
         }
+        bindMoneyFormat(view.findViewById(R.id.invOngkir))
         view.findViewById<EditText>(R.id.invOngkir).doAfterTextChanged {
             // Emptying the field drops a courier picked earlier, so a new amount typed after
             // that cannot be printed under the old service name.
@@ -489,6 +495,7 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
     private fun resetInvoice(view: View) {
         invoiceDraft = InvoiceDraft()
         shippingChoice = null
+        editingItem = null
         listOf(R.id.invBuyer, R.id.invPhone, R.id.invAddress, R.id.invOngkir).forEach {
             view.findViewById<EditText>(it).setText("")
         }
@@ -524,65 +531,145 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         updateInvoiceTotal()
     }
 
-    private fun buildInvoiceItemRow(index: Int, item: InvoiceItem): View {
-        val primary = ContextCompat.getColor(this, R.color.text_primary)
-        val accent = ContextCompat.getColor(this, R.color.brand_purple)
+    /**
+     * One product line. A freshly added line (or one the CS taps "Ubah" on) is open for editing:
+     * quantity buttons, unit price and "Simpan". Once saved it is a compact read-only row, so
+     * the form is not left open under the CS's fingers.
+     */
+    private fun buildInvoiceItemRow(index: Int, item: InvoiceItem): View =
+        if (index == editingItem) buildEditingItemRow(index, item) else buildSavedItemRow(index, item)
 
-        fun smallButton(label: String, onTap: () -> Unit) = TextView(this).apply {
-            text = label
-            textSize = 16f
-            setTextColor(accent)
+    private fun itemSmallButton(label: String, onTap: () -> Unit) = TextView(this).apply {
+        text = label
+        textSize = 16f
+        setTextColor(ContextCompat.getColor(this@SamaQuIME, R.color.brand_purple))
+        setTypeface(null, Typeface.BOLD)
+        gravity = Gravity.CENTER
+        setBackgroundResource(R.drawable.pill_bg)
+        isClickable = true
+        isFocusable = true
+        setOnClickListener { onTap() }
+        layoutParams = LinearLayout.LayoutParams(dp(36), dp(32)).apply { marginStart = dp(6) }
+    }
+
+    private fun itemTitle(item: InvoiceItem, vararg buttons: View): LinearLayout = LinearLayout(this).apply {
+        orientation = LinearLayout.HORIZONTAL
+        gravity = Gravity.CENTER_VERTICAL
+        addView(
+            TextView(this@SamaQuIME).apply {
+                text = item.label
+                textSize = 12f
+                setTextColor(ContextCompat.getColor(this@SamaQuIME, R.color.text_primary))
+                maxLines = 2
+                ellipsize = android.text.TextUtils.TruncateAt.END
+            },
+            LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT).apply { weight = 1f }
+        )
+        buttons.forEach { addView(it) }
+    }
+
+    private fun removeItemButton(index: Int) = itemSmallButton("✕") {
+        invoiceDraft = invoiceDraft.withoutItem(index)
+        editingItem = null
+        renderInvoiceItems()
+    }
+
+    private fun itemCard(vararg children: View): LinearLayout = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        setBackgroundResource(R.drawable.card_bg)
+        setPadding(dp(12), dp(8), dp(8), dp(8))
+        children.forEach { addView(it) }
+    }
+
+    /** Read-only line: what, how many at what price, the line total, and "Ubah". */
+    private fun buildSavedItemRow(index: Int, item: InvoiceItem): View {
+        val primary = ContextCompat.getColor(this, R.color.text_primary)
+        val muted = ContextCompat.getColor(this, R.color.text_muted)
+
+        val edit = TextView(this).apply {
+            text = getString(R.string.btn_edit_item)
+            textSize = 12f
+            setTextColor(ContextCompat.getColor(this@SamaQuIME, R.color.brand_purple))
             setTypeface(null, Typeface.BOLD)
             gravity = Gravity.CENTER
             setBackgroundResource(R.drawable.pill_bg)
             isClickable = true
             isFocusable = true
-            setOnClickListener { onTap() }
-            layoutParams = LinearLayout.LayoutParams(dp(36), dp(32)).apply { marginStart = dp(6) }
+            setPadding(dp(14), 0, dp(14), 0)
+            setOnClickListener {
+                editingItem = index
+                renderInvoiceItems()
+            }
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(32)).apply { marginStart = dp(6) }
         }
 
-        val title = LinearLayout(this).apply {
+        val amounts = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(4), 0, 0)
             addView(
                 TextView(this@SamaQuIME).apply {
-                    text = item.label
+                    text = "${item.qty} x ${InvoiceFormatter.rupiah(item.unitPrice)}"
                     textSize = 12f
-                    setTextColor(primary)
-                    maxLines = 2
-                    ellipsize = android.text.TextUtils.TruncateAt.END
+                    setTextColor(muted)
                 },
                 LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT).apply { weight = 1f }
             )
-            addView(smallButton("✕") {
-                invoiceDraft = invoiceDraft.withoutItem(index)
-                renderInvoiceItems()
+            addView(TextView(this@SamaQuIME).apply {
+                text = InvoiceFormatter.rupiah(item.lineTotal)
+                textSize = 13f
+                setTextColor(primary)
+                setTypeface(null, Typeface.BOLD)
             })
         }
+        return itemCard(itemTitle(item, edit, removeItemButton(index)), amounts)
+    }
+
+    /** Open line: quantity buttons, unit price (shown with thousands dots) and "Simpan". */
+    private fun buildEditingItemRow(index: Int, item: InvoiceItem): View {
+        val primary = ContextCompat.getColor(this, R.color.text_primary)
 
         val priceField = EditText(this).apply {
             tag = itemPriceTag
             inputType = InputType.TYPE_CLASS_NUMBER
-            setText(item.unitPrice.toString())
+            setText(MoneyInput.format(item.unitPrice.toString()))
             textSize = 13f
             setTextColor(primary)
             setBackgroundResource(R.drawable.field_bg)
             setPadding(dp(10), 0, dp(10), 0)
             importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO
             contentDescription = getString(R.string.invoice_item_price)
-            // After setText, so the initial value does not count as an edit.
+            // Attached after setText, so the initial value does not count as an edit.
+            bindMoneyFormat(this)
             doAfterTextChanged {
-                invoiceDraft = invoiceDraft.withUnitPrice(index, it?.toString()?.toLongOrNull() ?: 0L)
+                invoiceDraft = invoiceDraft.withUnitPrice(index, MoneyInput.parse(it?.toString().orEmpty()) ?: 0L)
                 updateInvoiceTotal()
             }
         }
         bindInvoiceField(priceField)
 
+        val save = TextView(this).apply {
+            text = getString(R.string.btn_save_item)
+            textSize = 12f
+            setTextColor(ContextCompat.getColor(this@SamaQuIME, R.color.surface))
+            setTypeface(null, Typeface.BOLD)
+            gravity = Gravity.CENTER
+            setBackgroundResource(R.drawable.btn_blue_bg)
+            isClickable = true
+            isFocusable = true
+            setPadding(dp(14), 0, dp(14), 0)
+            setOnClickListener {
+                editingItem = null
+                releaseFocusedField()
+                renderInvoiceItems()
+            }
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(36)).apply { marginStart = dp(6) }
+        }
+
         val controls = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(0, dp(6), 0, 0)
-            addView(smallButton("−") {
+            addView(itemSmallButton("−") {
                 invoiceDraft = invoiceDraft.withQty(index, item.qty - 1)
                 renderInvoiceItems()
             }.apply { (layoutParams as LinearLayout.LayoutParams).marginStart = 0 })
@@ -594,22 +681,34 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
                     setTypeface(null, Typeface.BOLD)
                     gravity = Gravity.CENTER
                 },
-                LinearLayout.LayoutParams(dp(34), ViewGroup.LayoutParams.WRAP_CONTENT)
+                LinearLayout.LayoutParams(dp(30), ViewGroup.LayoutParams.WRAP_CONTENT)
             )
-            addView(smallButton("+") {
+            addView(itemSmallButton("+") {
                 invoiceDraft = invoiceDraft.withQty(index, item.qty + 1)
                 renderInvoiceItems()
             })
             addView(View(this@SamaQuIME), LinearLayout.LayoutParams(0, 1).apply { weight = 1f })
-            addView(priceField, LinearLayout.LayoutParams(dp(120), dp(36)))
+            addView(priceField, LinearLayout.LayoutParams(dp(104), dp(36)))
+            addView(save)
         }
+        return itemCard(itemTitle(item, removeItemButton(index)), controls)
+    }
 
-        return LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setBackgroundResource(R.drawable.card_bg)
-            setPadding(dp(12), dp(8), dp(8), dp(8))
-            addView(title)
-            addView(controls)
+    /**
+     * Shows what is typed into [field] as rupiah with thousands dots (`40500` -> `40.500`),
+     * keeping the cursor at the end. The dots are only for the eyes: [MoneyInput.parse] and
+     * [InvoiceFormatter.shippingFor] read the digits back.
+     */
+    private fun bindMoneyFormat(field: EditText) {
+        var busy = false
+        field.doAfterTextChanged { s ->
+            if (busy || s == null) return@doAfterTextChanged
+            val formatted = MoneyInput.format(s.toString())
+            if (formatted == s.toString()) return@doAfterTextChanged
+            busy = true
+            s.replace(0, s.length, formatted)
+            busy = false
+            field.setSelection(field.text.length)
         }
     }
 
@@ -1114,6 +1213,7 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         } else {
             invoiceDraft.withItem(InvoiceItem(label, 1, SamaQuText.priceOf(product, variant)))
         }
+        editingItem = if (existing >= 0) existing else invoiceDraft.items.lastIndex
         renderInvoiceItems()
 
         showProductListStep()
