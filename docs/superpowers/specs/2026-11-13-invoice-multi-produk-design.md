@@ -143,3 +143,5 @@ Sebelum mulai: buka Settings app, pastikan Supabase URL berisi `https://bzoitgiv
 - [ ] "Generate & Kirim ke Chat" menulis teks yang sama dengan format di bagian *Latar belakang* (cek `Rp374.000` tanpa spasi, baris Pembayaran BSI, kalimat penutup).
 - [ ] Setelah dikirim, form kosong dan siap dipakai lagi. Tanpa produk, tombol menampilkan "Pilih minimal satu produk".
 - [ ] Mengubah "Kalimat penutup invoice" di Settings mengubah baris terakhir invoice; mengosongkannya menghilangkan baris itu.
+- [ ] Mengetuk kolom **No. WA**, **Ongkir**, atau **harga satuan** langsung memunculkan dek angka (baris 1–0); mengetuk **Nama pembeli** atau **Alamat** memunculkan huruf.
+- [ ] Menekan Enter atau menutup panel setelah mengisi kolom angka mengembalikan dek ke huruf. Memakai dek simbol sendiri di chat biasa tidak ikut berubah.

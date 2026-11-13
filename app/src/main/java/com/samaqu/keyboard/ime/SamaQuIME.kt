@@ -46,6 +46,7 @@ import com.samaqu.keyboard.ui.TemplateAdapter
 import com.samaqu.keyboard.ui.VariantAdapter
 import com.samaqu.keyboard.util.Backspace
 import com.samaqu.keyboard.util.CalculatorEngine
+import com.samaqu.keyboard.util.FieldInput
 import com.samaqu.keyboard.util.InvoiceDraft
 import com.samaqu.keyboard.util.InvoiceFormatter
 import com.samaqu.keyboard.util.InvoiceItem
@@ -366,6 +367,7 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         field.setOnTouchListener { _, event ->
             if (event.action == android.view.MotionEvent.ACTION_DOWN) {
                 focusedField = field
+                onFieldFocused(field)
                 invoiceFields.forEach { it.setBackgroundResource(R.drawable.field_bg) }
                 field.setBackgroundResource(R.drawable.field_bg_active)
             }
@@ -534,6 +536,7 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
             field.setOnTouchListener { _, event ->
                 if (event.action == android.view.MotionEvent.ACTION_DOWN) {
                     focusedField = field
+                    onFieldFocused(field)
                     fields.forEach { it.setBackgroundResource(R.drawable.field_bg) }
                     field.setBackgroundResource(R.drawable.field_bg_active)
                 }
@@ -571,6 +574,7 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
 
         // Release the key stream while the request runs, so stray taps do not edit a field.
         focusedField = null
+        restoreLetterDeck()
         status.text = getString(R.string.ongkir_loading)
         status.visibility = View.VISIBLE
 
@@ -804,6 +808,7 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         search.setOnTouchListener { _, event ->
             if (event.action == android.view.MotionEvent.ACTION_DOWN) {
                 focusedField = search
+                onFieldFocused(search)
                 search.setBackgroundResource(R.drawable.field_bg_active)
                 // The keys are typed with these very keys, so the deck comes back under the
                 // panel and the panel gives up the room it was using for the list.
@@ -1171,10 +1176,36 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         showProductListStep()
     }
 
+    /** True while the symbols deck is showing only because a number field was touched. */
+    private var numberDeckForced = false
+
+    /**
+     * A number or phone field wants the digits row straight away; any other field goes back
+     * to letters. Only the deck changes: the user's own choice of deck in the chat itself is
+     * left alone, see [restoreLetterDeck].
+     */
+    private fun onFieldFocused(field: EditText) {
+        val wantsNumbers = FieldInput.wantsNumberDeck(field.inputType)
+        if (wantsNumbers) {
+            switchKeyboard(symbols)
+        } else if (numberDeckForced) {
+            switchKeyboard(qwerty)
+        }
+        numberDeckForced = wantsNumbers
+    }
+
+    /** Gives the letters back after a number field was released (no-op otherwise). */
+    private fun restoreLetterDeck() {
+        if (!numberDeckForced) return
+        numberDeckForced = false
+        switchKeyboard(qwerty)
+    }
+
     /** Stops routing key taps into an in-keyboard field and restores its idle border. */
     private fun releaseFocusedField() {
         focusedField?.setBackgroundResource(R.drawable.field_bg)
         focusedField = null
+        restoreLetterDeck()
         // Releasing a field inside the picker hands the deck back to it, so the list grows
         // again - this is what makes the search stop looking like it ate the results.
         applyDeckAndPickerLayout()
@@ -1505,7 +1536,10 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
                 // which inserted an invisible char and left caps untouched - so capitals
                 // stopped working as soon as any invoice/ongkir field was selected.
                 SamaQuKeyboardView.CODE_SHIFT -> toggleShift()
-                SamaQuKeyboardView.CODE_ENTER -> focusedField = null
+                SamaQuKeyboardView.CODE_ENTER -> {
+                    focusedField = null
+                    restoreLetterDeck()
+                }
                 else -> typeToField(primaryCode)
             }
             return
