@@ -111,21 +111,33 @@ object SamaQuText {
      *
      * Name and series are joined by a space (no bullet), the fabric code and the size carry
      * their own words, and the store's placeholder colour "default" is left out. Anything
-     * blank is skipped, so nothing leaves a stray comma, space or `()` behind.
+     * blank is skipped, so nothing leaves a stray comma, space or `()` behind. Two more rules
+     * keep the line from saying things twice:
+     *  - a variant name that already spells out the whole product name replaces it
+     *    (`Kabak 01` for "Kabak", `Cover Thobe + Hanger` for "Cover & Hanger");
+     *  - a colour the product name already carries (`Kandora Broken White` / `Broken White`) and
+     *    the size "ALL SIZE", which is not a size anyone picks, are left out.
      */
-    fun invoiceLineLabel(product: CachedProduct, variant: CachedVariant?): String =
-        buildString {
-            append(listOf(product.name, product.series).map { it.trim() }.filter { it.isNotEmpty() }.joinToString(" "))
+    fun invoiceLineLabel(product: CachedProduct, variant: CachedVariant?): String {
+        val color = variant?.color?.trim().orEmpty().takeUnless { it.equals("default", ignoreCase = true) }.orEmpty()
+        val colorRepeatsName = color.isNotEmpty() && product.name.contains(color, ignoreCase = true)
+        val nameWords = wordsOf(product.name)
+        val colorReplacesName = color.isNotEmpty() && !colorRepeatsName &&
+            nameWords.isNotEmpty() && wordsOf(color).containsAll(nameWords)
+
+        return buildString {
+            val base = if (colorReplacesName) color else product.name
+            append(listOf(base, product.series).map { it.trim() }.filter { it.isNotEmpty() }.joinToString(" "))
             if (product.kain.isNotBlank()) append(" (kain ").append(product.kain.trim()).append(')')
-            // A colour the product name already carries ("Kandora Broken White" / "Broken White")
-            // would only be said twice.
-            val color = variant?.color?.trim().orEmpty()
-                .takeUnless { it.equals("default", ignoreCase = true) || product.name.contains(it, ignoreCase = true) }
-                .orEmpty()
-            if (color.isNotEmpty()) append(", warna ").append(color)
+            if (color.isNotEmpty() && !colorRepeatsName && !colorReplacesName) append(", warna ").append(color)
             val size = variant?.size?.trim().orEmpty()
-            if (size.isNotEmpty()) append(", size ").append(size)
+            if (size.isNotEmpty() && !size.equals("ALL SIZE", ignoreCase = true)) append(", size ").append(size)
         }
+    }
+
+    /** Lower-cased words and numbers of [text], symbols such as `&` and `+` ignored. */
+    private fun wordsOf(text: String): Set<String> =
+        Regex("[\\p{L}\\p{N}]+").findAll(text.lowercase()).map { it.value }.toSet()
 
     /** Price that applies to a variant: its own override when the store sets one. */
     fun priceOf(product: CachedProduct, variant: CachedVariant?): Long =

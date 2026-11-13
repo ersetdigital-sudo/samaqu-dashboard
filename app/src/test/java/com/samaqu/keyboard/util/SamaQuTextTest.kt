@@ -284,16 +284,39 @@ class SamaQuTextTest {
     }
 
     @Test
-    fun `invoiceLineLabel keeps a colour that the product name does not say`() {
-        val kabak = product("kabak", "Kabak", category = "Kabak")
+    fun `invoiceLineLabel keeps a colour that adds something to the product name`() {
+        val thobe = product("t", "Thobe Latte", series = "Bayati")
 
-        assertEquals("Kabak, warna Kabak 01, size ALL SIZE", SamaQuText.invoiceLineLabel(kabak, variant("v", color = "Kabak 01", size = "ALL SIZE")))
+        assertEquals(
+            "Thobe Latte Bayati, warna Cream, size M",
+            SamaQuText.invoiceLineLabel(thobe, variant("v", color = "Cream", size = "M"))
+        )
     }
 
     @Test
-    fun `invoiceLineLabel writes ALL SIZE as a size`() {
-        val cover = product("hanger", "Hanger", category = "Cover & Hanger")
+    fun `invoiceLineLabel uses the variant name when it already contains the whole product name`() {
+        val kabak = product("kabak", "Kabak", category = "Kabak")
+        val cover = product("cover-hanger", "Cover & Hanger", category = "Cover & Hanger")
 
-        assertEquals("Hanger, size ALL SIZE", SamaQuText.invoiceLineLabel(cover, variant("v", size = "ALL SIZE")))
+        assertEquals("Kabak 01", SamaQuText.invoiceLineLabel(kabak, variant("v", color = "Kabak 01", size = "ALL SIZE")))
+        assertEquals(
+            "Cover Thobe + Hanger",
+            SamaQuText.invoiceLineLabel(cover, variant("v", color = "Cover Thobe + Hanger", size = "ALL SIZE"))
+        )
+    }
+
+    @Test
+    fun `invoiceLineLabel does not write ALL SIZE as a size`() {
+        val hanger = product("hanger", "Hanger", category = "Cover & Hanger")
+
+        assertEquals("Hanger", SamaQuText.invoiceLineLabel(hanger, variant("v", size = "ALL SIZE")))
+        assertEquals("Hanger", SamaQuText.invoiceLineLabel(hanger, variant("v", size = "all size")))
+    }
+
+    @Test
+    fun `invoiceLineLabel keeps the kain after a variant name that replaced the product name`() {
+        val kabak = product("kabak", "Kabak", category = "Kabak", kain = "C.01")
+
+        assertEquals("Kabak 01 (kain C.01)", SamaQuText.invoiceLineLabel(kabak, variant("v", color = "Kabak 01", size = "ALL SIZE")))
     }
 }

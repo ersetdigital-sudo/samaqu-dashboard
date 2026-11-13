@@ -139,14 +139,27 @@ object InvoiceFormatter {
         lines += "Berikut invoice pesanannya ya Ka${if (buyer.isEmpty()) "k" else " $buyer"}."
         lines += ""
         lines += "INVOICE PESANAN SAMAQU"
-        if (buyer.isNotEmpty()) lines += "Nama: $buyer"
-        if (phone.isNotEmpty()) lines += "No. WA: $phone"
-        if (address.isNotEmpty()) lines += "Alamat: $address"
+        val customer = buildList {
+            if (buyer.isNotEmpty()) add("Nama: $buyer")
+            if (phone.isNotEmpty()) add("No. WA: $phone")
+            if (address.isNotEmpty()) add("Alamat: $address")
+        }
+        if (customer.isNotEmpty()) {
+            lines += ""
+            lines += customer
+        }
         lines += ""
         lines += "Pesanan:"
-        draft.items.forEach { lines += "${it.qty} x ${it.label.trim()} - ${rupiah(it.lineTotal)}" }
-        draft.shipping?.let { lines += shippingLine(it) }
-        lines += ""
+        // Each product is two lines (what and how many, then its price) followed by a blank line.
+        draft.items.forEach {
+            lines += "${it.qty} x ${it.label.trim()}"
+            lines += rupiah(it.lineTotal)
+            lines += ""
+        }
+        draft.shipping?.let {
+            lines += shippingLine(it)
+            lines += ""
+        }
         lines += "Total: ${rupiah(draft.total)}"
         if (payment.isNotEmpty()) {
             lines += ""

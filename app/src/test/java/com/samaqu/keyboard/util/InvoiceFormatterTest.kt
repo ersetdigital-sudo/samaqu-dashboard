@@ -29,19 +29,35 @@ class InvoiceFormatterTest {
 
     @Test
     fun `format reproduces the owner's invoice exactly`() {
+        val draft = InvoiceDraft(
+            buyer = "Budi Santoso",
+            phone = "08123456789",
+            address = "Jl. Sudirman No.123, Kel. Contoh, Kec. Ciracas, Jakarta Timur, DKI Jakarta 13730",
+            items = listOf(
+                InvoiceItem("Thobe Broken White Jiharkah (kain B-01), size M", 1, 359_000),
+                InvoiceItem("Cover Thobe + Hanger", 1, 35_000)
+            ),
+            shipping = InvoiceShipping("J&T", "EZ", "2-4 hari", 9_000)
+        )
         val expected = listOf(
-            "Berikut invoice pesanannya ya Ka Muhammad Nasir.",
+            "Berikut invoice pesanannya ya Ka Budi Santoso.",
             "",
             "INVOICE PESANAN SAMAQU",
-            "Nama: Muhammad Nasir",
-            "No. WA: 0852-6041-2200",
-            "Alamat: $address",
+            "",
+            "Nama: Budi Santoso",
+            "No. WA: 08123456789",
+            "Alamat: Jl. Sudirman No.123, Kel. Contoh, Kec. Ciracas, Jakarta Timur, DKI Jakarta 13730",
             "",
             "Pesanan:",
-            "1 x Thobe Broken White Imalah (kain B-01), size M - Rp374.000",
-            "Ongkir J&T ECO (estimasi 3-7 hari): Rp40.500",
+            "1 x Thobe Broken White Jiharkah (kain B-01), size M",
+            "Rp359.000",
             "",
-            "Total: Rp414.500",
+            "1 x Cover Thobe + Hanger",
+            "Rp35.000",
+            "",
+            "Ongkir J&T EZ (estimasi 2-4 hari): Rp9.000",
+            "",
+            "Total: Rp403.000",
             "",
             "Pembayaran via transfer:",
             "Bank BSI 7153280058",
@@ -50,7 +66,21 @@ class InvoiceFormatterTest {
             "Kalau sudah transfer, kirim bukti transfernya di sini ya Ka."
         ).joinToString("\n")
 
-        assertEquals(expected, InvoiceFormatter.format(nasir(), bank, InvoiceFormatter.DEFAULT_CLOSING))
+        assertEquals(expected, InvoiceFormatter.format(draft, bank, InvoiceFormatter.DEFAULT_CLOSING))
+    }
+
+    @Test
+    fun `without any customer data the header is followed by a single blank line`() {
+        val text = InvoiceFormatter.format(InvoiceDraft(items = listOf(thobe)), "", "")
+
+        assertTrue(text.startsWith("Berikut invoice pesanannya ya Kak.\n\nINVOICE PESANAN SAMAQU\n\nPesanan:\n"))
+    }
+
+    @Test
+    fun `no shipping goes straight from the last item to the total`() {
+        val text = InvoiceFormatter.format(InvoiceDraft(items = listOf(thobe)), "", "")
+
+        assertTrue(text.endsWith("Pesanan:\n1 x ${thobe.label}\nRp374.000\n\nTotal: Rp374.000"))
     }
 
     // ------------------------------------------------------------------------- money
@@ -66,7 +96,7 @@ class InvoiceFormatterTest {
         val draft = InvoiceDraft(items = listOf(InvoiceItem("Kandora Navy, size L", 2, 374_000)))
         val text = InvoiceFormatter.format(draft, "", "")
 
-        assertTrue(text.contains("2 x Kandora Navy, size L - Rp748.000"))
+        assertTrue(text.contains("2 x Kandora Navy, size L\nRp748.000"))
         assertEquals(748_000L, draft.total)
         assertTrue(text.contains("Total: Rp748.000"))
     }
