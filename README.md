@@ -84,16 +84,21 @@ visible, because its fields are typed with these very keys.
 
 Backend credentials live in `network/SupabaseConfig.kt`:
 
-- `PROJECT_URL` — the Supabase project URL
+- `PROJECT_URL` — the Supabase project URL. Since 2026-11-13 this is the store website's own
+  project, `SAMAQU WEBSITE` (`bzoitgivmozhwpuomuhj`), so the keyboard shows the same products,
+  prices and stock as the shop. A phone that saved the previous project's URL in Settings is
+  moved to the new default automatically.
 - `ANON_KEY` — the **anon** key. It is a public key by design and is also present in the
   shipped APK and in the store's JavaScript bundle; what actually gates access is Row
   Level Security, not this key.
 
 **Never commit a `service_role` key or any server secret to this repository.**
 
-`supabase_setup.sql` at the repo root is the idempotent script for the tables the app owns
-(`categories`, `templates` and their anon write policies). The store's own tables
-(`orders`, `order_items`, `products`, `product_variants`) are **read-only** from here.
+With the anon key the keyboard can **read** `products`, `product_variants`, `jenis_kain`
+(fabric codes), `payment_methods` (bank accounts printed on invoices), `categories` and
+`templates`. Editing templates and reading `orders` need an admin login, which the app does
+not have yet — see [`NOTES.md`](NOTES.md) §2. `supabase_setup.sql` at the repo root belongs to
+the previous project and is kept for reference.
 
 ---
 
@@ -111,5 +116,9 @@ Backend credentials live in `network/SupabaseConfig.kt`:
 - Written and unit-tested, **not** exercised on a physical device: the keyboard's runtime
   behaviour (panel switching, long-press Enter, typing into its own fields) still needs a
   pass on a real phone.
-- Writes to Supabase from this app are limited to `categories` / `templates`, which are
-  intentionally writable by anon. Anything holding customer data must stay read-only.
+- On the current project the keyboard writes nothing: `templates` / `categories` are
+  read-only for the anon key, so Auto Text can be read but not edited from the app. The Pending
+  panel and order notifications also show nothing until the app gets an admin login.
+- The web dashboard in `web-dashboard/` still writes templates to the previous project, so
+  its edits no longer reach the keyboard.
+- The invoice is built as text and sent to the chat; it is not stored (see `NOTES.md` §5).

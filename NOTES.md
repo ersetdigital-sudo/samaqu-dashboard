@@ -11,7 +11,7 @@ you got here. This file is that context.
 
 | | State |
 |---|---|
-| Build + 41 JVM unit tests | ✅ green (`./gradlew assembleLiteDebug testLiteDebugUnitTest`) |
+| Build + 114 JVM unit tests | ✅ green (`./gradlew assembleLiteDebug testLiteDebugUnitTest`) |
 | QWERTY / shift / emoji / auto text / pending / ongkir / invoice / dashboard | ✅ written, **never run on a phone** |
 | Quick Calculator (hold **Enter**) | ✅ written, **never run on a phone** |
 | Product picker + size/stock step | ✅ written, **never run on a phone** |
@@ -31,7 +31,7 @@ work available, and it is the one gap no amount of reading closes.
 ```
 ┌───────────────────┐   anon key (in APK)   ┌──────────────────────────────┐
 │  SAMAQU keyboard  │ ────────────────────► │ Supabase PostgREST           │
-│  RetrofitClient   │  /rest/v1/...         │ project `samaqu`             │
+│  RetrofitClient   │  /rest/v1/...         │ project `SAMAQU WEBSITE`     │
 └───────────────────┘                       └──────────────────────────────┘
 
 ┌───────────────────┐   NO key of ours      ┌──────────────────────────────┐
@@ -45,7 +45,38 @@ work available, and it is the one gap no amount of reading closes.
 - **Never commit a `service_role` key or any server secret.** The anon key is public by
   design (it is in the APK and in the store's JavaScript bundle); RLS, not the key, is
   what gates access.
-- `supabase_setup.sql` (repo root) is the idempotent script for the tables this app owns.
+- `supabase_setup.sql` (repo root) is the idempotent script for the tables this app owned in
+  the **previous** project (see the update below); it is kept for reference.
+
+### Update 2026-11-13: the keyboard now reads the store's own project
+
+Until this date the keyboard read a **separate, older Supabase project**
+(`zympqqmrygldagpazvse`: 111 products, 547 variants, prices that had drifted from the shop).
+It now defaults to the store website's project, **`SAMAQU WEBSITE`
+(`bzoitgivmozhwpuomuhj`)**: 121 products, 587 variants. `Prefs` treats a URL or key saved in
+Settings that equals the old project's as "not saved" (`SavedSettings.resolve`), so phones
+that stored the old default move over by themselves; a URL typed on purpose is left alone.
+
+What the anon key can do on the new project (read from `pg_policies`, 2026-11-13):
+
+| Tables | anon read | anon write |
+|---|---|---|
+| `products`, `product_variants`, `jenis_kain`, `payment_methods`, `categories`, `templates` | yes | **no** — admin login only |
+| `orders`, `order_items` | **no** policy for anon | no |
+| `store_settings` | yes (`Public read store_settings`) | no |
+
+Consequences you should know about:
+
+- **Editing templates from the keyboard stopped working.** Auto Text still reads them.
+- **`web-dashboard/index.html` and the root `index.html` still point at the old project** and
+  write templates there, so edits made in that dashboard no longer reach the keyboard until
+  the dashboard is moved or given an admin login. Not changed here on purpose.
+- **Pending panel and the order-notification poller read `orders`**, which the anon key cannot
+  read on the new project: both show nothing until the app gets an admin login (§5, option C).
+- The fabric code printed on invoices (`B-01`, `B-02`, `A-02`, `C.01`, `B02`) is the `name` of the
+  `jenis_kain` row a product points at through `products.jenis_kain_id`. `products.kain` is
+  empty. The bank accounts on invoices come from `payment_methods` (`method_type = 'bank'`,
+  `is_active`), cached in `Prefs.paymentText` after each catalogue sync.
 
 ---
 
@@ -53,6 +84,8 @@ work available, and it is the one gap no amount of reading closes.
 
 Columns below were read from the running project, not guessed. Re-probe before relying
 on them; the store's website is developed separately and can change them.
+**The row counts and the "anon has full CRUD" claims in this section describe the previous
+project; the update at the end of §2 describes the current one.**
 
 **Owned by this app (anon has full CRUD):**
 
@@ -85,6 +118,10 @@ Notes that matter:
 
 ## 4. Security findings (pre-existing, still open)
 
+> Items 2–4 were verified on the previous project. On the current one (§2) `orders` and
+> `order_items` have no anon policy and `templates` / `categories` are no longer anon-writable.
+> A `Public read store_settings` policy still exists there, so item 1 needs re-checking.
+
 Verified with the anon key. **Nothing here was introduced by this app**, but nothing has
 been fixed either:
 
@@ -107,9 +144,10 @@ authorization (see §5) has to add it; a public anon key cannot be treated as pe
 
 ## 5. Deferred: where invoices live (decide before building it)
 
-The Invoice Builder currently only produces **text** that is committed into the chat.
-Nothing is stored, no status exists, and the dashboard has no invoice module. Three
-options were laid out:
+The Invoice Builder produces a multi-product invoice as **text** that is committed into the
+chat, in the format the sales team already used by hand (see
+`docs/superpowers/specs/2026-11-13-invoice-multi-produk-design.md`). Nothing is stored, no
+status exists, and the dashboard has no invoice module. Three options were laid out:
 
 | | Option | Cost |
 |---|---|---|
