@@ -117,7 +117,11 @@ object SamaQuText {
         buildString {
             append(listOf(product.name, product.series).map { it.trim() }.filter { it.isNotEmpty() }.joinToString(" "))
             if (product.kain.isNotBlank()) append(" (kain ").append(product.kain.trim()).append(')')
-            val color = variant?.color?.trim().orEmpty().takeUnless { it.equals("default", ignoreCase = true) }.orEmpty()
+            // A colour the product name already carries ("Kandora Broken White" / "Broken White")
+            // would only be said twice.
+            val color = variant?.color?.trim().orEmpty()
+                .takeUnless { it.equals("default", ignoreCase = true) || product.name.contains(it, ignoreCase = true) }
+                .orEmpty()
             if (color.isNotEmpty()) append(", warna ").append(color)
             val size = variant?.size?.trim().orEmpty()
             if (size.isNotEmpty()) append(", size ").append(size)

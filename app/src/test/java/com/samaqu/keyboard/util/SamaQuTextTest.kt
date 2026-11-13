@@ -270,6 +270,27 @@ class SamaQuTextTest {
     }
 
     @Test
+    fun `invoiceLineLabel drops a colour the product name already says`() {
+        val kandora = product("kandora-broken-white", "Kandora Broken White", category = "Kandora", kain = "B-01")
+
+        assertEquals(
+            "Kandora Broken White (kain B-01), size XS",
+            SamaQuText.invoiceLineLabel(kandora, variant("v", color = "Broken White", size = "XS"))
+        )
+        assertEquals(
+            "Kandora Broken White (kain B-01), size XS",
+            SamaQuText.invoiceLineLabel(kandora, variant("v", color = "BROKEN white", size = "XS"))
+        )
+    }
+
+    @Test
+    fun `invoiceLineLabel keeps a colour that the product name does not say`() {
+        val kabak = product("kabak", "Kabak", category = "Kabak")
+
+        assertEquals("Kabak, warna Kabak 01, size ALL SIZE", SamaQuText.invoiceLineLabel(kabak, variant("v", color = "Kabak 01", size = "ALL SIZE")))
+    }
+
+    @Test
     fun `invoiceLineLabel writes ALL SIZE as a size`() {
         val cover = product("hanger", "Hanger", category = "Cover & Hanger")
 
