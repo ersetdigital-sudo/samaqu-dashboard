@@ -80,6 +80,9 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
     private var keyboardView: KeyboardView? = null
     private var qwerty: Keyboard? = null
     private var symbols: Keyboard? = null
+
+    /** Digits-only keypad shown for number and phone fields. */
+    private var numpad: Keyboard? = null
     /**
      * Shift state. Shared by the letter deck and by the IME's own in-panel fields, so both
      * type the character the key on screen shows.
@@ -228,6 +231,14 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
                 Prefs.KEY_SIZE_SMALL -> R.xml.symbols_small
                 Prefs.KEY_SIZE_LARGE -> R.xml.symbols_large
                 else -> R.xml.symbols
+            }
+        )
+        numpad = Keyboard(
+            this,
+            when (keySize) {
+                Prefs.KEY_SIZE_SMALL -> R.xml.numpad_small
+                Prefs.KEY_SIZE_LARGE -> R.xml.numpad_large
+                else -> R.xml.numpad
             }
         )
 
@@ -1235,7 +1246,7 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         showProductListStep()
     }
 
-    /** True while the symbols deck is showing only because a number field was touched. */
+    /** True while the digits keypad is showing only because a number field was touched. */
     private var numberDeckForced = false
 
     /**
@@ -1246,7 +1257,7 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
     private fun onFieldFocused(field: EditText) {
         val wantsNumbers = FieldInput.wantsNumberDeck(field.inputType)
         if (wantsNumbers) {
-            switchKeyboard(symbols)
+            switchKeyboard(numpad)
         } else if (numberDeckForced) {
             switchKeyboard(qwerty)
         }

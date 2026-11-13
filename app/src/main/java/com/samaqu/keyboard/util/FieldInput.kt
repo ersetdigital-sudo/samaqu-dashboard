@@ -7,7 +7,7 @@ object FieldInput {
 
     /**
      * True for fields that only take digits (numbers, phone numbers): the keyboard then shows
-     * its symbols deck, whose top row is 1-0, instead of making the user hunt for "123".
+     * its digits-only keypad instead of making the user hunt for "123".
      */
     fun wantsNumberDeck(inputType: Int): Boolean =
         when (inputType and InputType.TYPE_MASK_CLASS) {
