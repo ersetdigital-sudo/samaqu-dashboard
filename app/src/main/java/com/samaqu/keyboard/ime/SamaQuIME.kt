@@ -57,6 +57,7 @@ import com.samaqu.keyboard.util.InvoiceDraft
 import com.samaqu.keyboard.util.InvoiceFormatter
 import com.samaqu.keyboard.util.InvoiceItem
 import com.samaqu.keyboard.util.InvoiceShipping
+import com.samaqu.keyboard.util.LatestOnly
 import com.samaqu.keyboard.util.MoneyInput
 import com.samaqu.keyboard.util.SamaQuText
 import com.samaqu.keyboard.util.ShiftState
@@ -144,6 +145,9 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
      * shipping cost) are read from the views when needed, see [currentInvoice].
      */
     private var invoiceDraft = InvoiceDraft()
+
+    /** Hands out tickets so that only the newest Cek Ongkir request draws its result. */
+    private val ongkirRequests = LatestOnly()
 
     /** Courier option picked in the Ongkir panel; its cost can still be changed by hand. */
     private var shippingChoice: InvoiceShipping? = null
@@ -766,6 +770,8 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
      */
     private fun checkOngkir() {
         val view = rootView ?: return
+        // Every tap takes a ticket; a slower, older request must not draw its rows as well.
+        val ticket = ongkirRequests.start()
         val district = view.findViewById<EditText>(R.id.ongkirDistrict).text.toString().trim()
         val city = view.findViewById<EditText>(R.id.ongkirCity).text.toString().trim()
         // The store's endpoint rejects a request with any empty field (400 "city, district,
@@ -792,6 +798,7 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
             val result = withContext(Dispatchers.IO) {
                 shipping.cost(city, district, weight)
             }
+            if (!ongkirRequests.isCurrent(ticket)) return@launch
             result.fold(
                 onSuccess = { options ->
                     if (options.isEmpty()) {
@@ -799,6 +806,7 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
                         status.visibility = View.VISIBLE
                     } else {
                         status.visibility = View.GONE
+                        results.removeAllViews()
                         options.forEach { addOngkirRow(results, it) }
                     }
                 },
@@ -819,13 +827,8 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
             setPadding(dp(12), dp(8), dp(6), dp(8))
         }
 
-        val etd = option.etd.trim()
         val label = TextView(this).apply {
-            text = buildString {
-                append(option.courier.trim())
-                if (option.service.isNotBlank()) append(' ').append(option.service.trim())
-                if (etd.isNotEmpty()) append(" • ").append(etd)
-            }
+            text = InvoiceFormatter.shippingSummary(option.toInvoiceShipping())
             setTextColor(ContextCompat.getColor(this@SamaQuIME, R.color.text_primary))
             textSize = 12f
         }
