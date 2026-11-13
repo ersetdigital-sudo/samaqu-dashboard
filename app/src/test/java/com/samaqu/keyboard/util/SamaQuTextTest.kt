@@ -238,4 +238,41 @@ class SamaQuTextTest {
         val withoutPayment = SamaQuText.fullInvoice("Ani", "Kaos", 1, 15000.0, 0.0, "  ")
         assertFalse(withoutPayment.contains("Transfer :"))
     }
+
+    // ------------------------------------------------- invoice line label (kain + size)
+
+    private val broken = product(
+        "thobe-broken-white-imalah", "Thobe Broken White", series = "Imalah", kain = "B-01"
+    )
+
+    @Test
+    fun `invoiceLineLabel joins name series kain and size`() {
+        assertEquals(
+            "Thobe Broken White Imalah (kain B-01), size M",
+            SamaQuText.invoiceLineLabel(broken, variant("v", size = "M"))
+        )
+    }
+
+    @Test
+    fun `invoiceLineLabel without series or kain has no stray punctuation`() {
+        val navy = product("kandora-navy", "Kandora Navy", category = "Kandora")
+
+        assertEquals("Kandora Navy, size L", SamaQuText.invoiceLineLabel(navy, variant("v", size = "L")))
+        assertEquals("Kandora Navy", SamaQuText.invoiceLineLabel(navy, null))
+    }
+
+    @Test
+    fun `invoiceLineLabel keeps a real colour before the size`() {
+        assertEquals(
+            "Thobe Broken White Imalah (kain B-01), warna Navy, size M",
+            SamaQuText.invoiceLineLabel(broken, variant("v", color = "Navy", size = "M"))
+        )
+    }
+
+    @Test
+    fun `invoiceLineLabel writes ALL SIZE as a size`() {
+        val cover = product("hanger", "Hanger", category = "Cover & Hanger")
+
+        assertEquals("Hanger, size ALL SIZE", SamaQuText.invoiceLineLabel(cover, variant("v", size = "ALL SIZE")))
+    }
 }

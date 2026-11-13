@@ -105,6 +105,24 @@ object SamaQuText {
         return if (detail.isBlank()) base else "$base ($detail)"
     }
 
+    /**
+     * Product line as the sales team writes it in an invoice, e.g.
+     * `Thobe Broken White Imalah (kain B-01), size M`.
+     *
+     * Name and series are joined by a space (no bullet), the fabric code and the size carry
+     * their own words, and the store's placeholder colour "default" is left out. Anything
+     * blank is skipped, so nothing leaves a stray comma, space or `()` behind.
+     */
+    fun invoiceLineLabel(product: CachedProduct, variant: CachedVariant?): String =
+        buildString {
+            append(listOf(product.name, product.series).map { it.trim() }.filter { it.isNotEmpty() }.joinToString(" "))
+            if (product.kain.isNotBlank()) append(" (kain ").append(product.kain.trim()).append(')')
+            val color = variant?.color?.trim().orEmpty().takeUnless { it.equals("default", ignoreCase = true) }.orEmpty()
+            if (color.isNotEmpty()) append(", warna ").append(color)
+            val size = variant?.size?.trim().orEmpty()
+            if (size.isNotEmpty()) append(", size ").append(size)
+        }
+
     /** Price that applies to a variant: its own override when the store sets one. */
     fun priceOf(product: CachedProduct, variant: CachedVariant?): Long =
         variant?.priceOverride?.takeIf { it > 0 } ?: product.price
