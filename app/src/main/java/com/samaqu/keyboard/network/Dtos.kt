@@ -62,7 +62,9 @@ data class Product(
     val colors: List<String> = emptyList(),
     val image: String? = null,
     /** The fabric type embedded through `jenis_kain(name)`; its name is the code (e.g. `B-01`). */
-    @SerializedName("jenis_kain") val jenisKain: JenisKainRef? = null
+    @SerializedName("jenis_kain") val jenisKain: JenisKainRef? = null,
+    /** Parcel weight in grams; the store leaves it null or 0 on a few rows. */
+    val weight: Int? = null
 )
 
 /** The `jenis_kain` row embedded in a product. */
@@ -95,7 +97,9 @@ data class Variant(
     val size: String? = null,
     val stock: Int = 0,
     @SerializedName("price_override") val priceOverride: Long? = null,
-    @SerializedName("display_order") val displayOrder: Int = 0
+    @SerializedName("display_order") val displayOrder: Int = 0,
+    /** Per-size weight in grams; null on about a quarter of the rows (use the product's). */
+    val weight: Int? = null
 )
 
 /**

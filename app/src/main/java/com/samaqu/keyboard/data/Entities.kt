@@ -1,5 +1,6 @@
 package com.samaqu.keyboard.data
 
+import androidx.room.ColumnInfo
 import androidx.room.Embedded
 import androidx.room.Entity
 import androidx.room.PrimaryKey
@@ -35,7 +36,9 @@ data class CachedProduct(
     val kain: String,
     val price: Long,
     /** Comma-joined colours, with the placeholder "default" already filtered out. */
-    val colors: String
+    val colors: String,
+    /** Parcel weight in grams as the store holds it; 0 when unknown. Added in database v4. */
+    @ColumnInfo(defaultValue = "0") val weight: Int = 0
 )
 
 /**
@@ -54,7 +57,9 @@ data class CachedVariant(
     val stock: Int,
     /** Per-size price when the store sets one; null means "use the product price". */
     val priceOverride: Long?,
-    val displayOrder: Int
+    val displayOrder: Int,
+    /** Per-size weight in grams; 0 means "use the product weight". Added in database v4. */
+    @ColumnInfo(defaultValue = "0") val weight: Int = 0
 )
 
 /** Category with its templates, as exposed to the UI. */

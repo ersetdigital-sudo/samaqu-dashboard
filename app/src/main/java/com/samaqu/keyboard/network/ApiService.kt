@@ -48,7 +48,7 @@ interface ApiService {
      * `products.jenis_kain_id -> jenis_kain.id`. The legacy `kain` column is still selected as
      * a fallback although the store leaves it empty today.
      */
-    @GET("rest/v1/products?select=id,name,category,series,kain,price,colors,image,jenis_kain(name)&order=name.asc")
+    @GET("rest/v1/products?select=id,name,category,series,kain,price,colors,image,weight,jenis_kain(name)&order=name.asc")
     suspend fun getProducts(): List<Product>
 
     /** Active bank accounts shown on invoices, in the store's display order. */
@@ -59,7 +59,7 @@ interface ApiService {
      * Size/colour grid of every product, in one call (~300 rows today). Small enough to cache
      * whole, which is what lets the picker show real stock while offline.
      */
-    @GET("rest/v1/product_variants?select=id,product_id,color,size,stock,price_override,display_order&order=display_order.asc")
+    @GET("rest/v1/product_variants?select=id,product_id,color,size,stock,price_override,display_order,weight&order=display_order.asc")
     suspend fun getVariants(): List<Variant>
 
     // ------------------------------------------------------------------ write access

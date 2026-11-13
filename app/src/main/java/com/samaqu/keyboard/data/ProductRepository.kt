@@ -78,7 +78,8 @@ class ProductRepository(ctx: Context) {
         size = size.orEmpty().trim(),
         stock = stock,
         priceOverride = priceOverride,
-        displayOrder = displayOrder
+        displayOrder = displayOrder,
+        weight = weight ?: 0
     )
 }
 
@@ -99,5 +100,6 @@ internal fun Product.toCachedProduct() = CachedProduct(
     // would just be noise.
     colors = colors.filterNot { it.equals("default", ignoreCase = true) }
         .joinToString(", ")
-        .trim()
+        .trim(),
+    weight = weight ?: 0
 )

@@ -7,7 +7,9 @@ import com.samaqu.keyboard.network.PaymentMethod
 data class InvoiceItem(
     val label: String,
     val qty: Int,
-    val unitPrice: Long
+    val unitPrice: Long,
+    /** Weight of one piece in grams; 0 when the store does not know it. */
+    val weightGram: Int = 0
 ) {
     val lineTotal: Long get() = qty * unitPrice
 }
@@ -33,6 +35,9 @@ data class InvoiceDraft(
 ) {
     val subtotal: Long get() = items.sumOf { it.lineTotal }
     val total: Long get() = subtotal + (shipping?.cost ?: 0)
+
+    /** What the parcel weighs: every line's quantity times its piece weight, in grams. */
+    val totalWeightGram: Int get() = items.sumOf { it.qty * it.weightGram }
 
     fun withItem(item: InvoiceItem): InvoiceDraft = copy(items = items + item)
 

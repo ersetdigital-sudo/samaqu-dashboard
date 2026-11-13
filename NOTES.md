@@ -235,8 +235,11 @@ Rules that exist for reasons:
   They are public and hold no key for us; **do not add credentials to the app**, and do
   not change them without the store website's owner.
 - **`orders` / `products` stay read-only** from here.
-- **Room is at version 3** with real migrations (`MIGRATION_1_2`, `MIGRATION_2_3`), both
-  checked character-for-character against the schema Room generates. Adding a table means
+- **Room is at version 4** with real migrations (`MIGRATION_1_2`, `MIGRATION_2_3`, `MIGRATION_3_4`),
+  the first two checked character-for-character against the schema Room generates. v4 adds
+  `weight` (grams) to the product and variant caches with `ALTER TABLE ... ADD COLUMN ... NOT NULL
+  DEFAULT 0` and `@ColumnInfo(defaultValue = "0")`; **this migration has not run on a device yet**,
+  so if the keyboard crashes right after an upgrade, look here first. Adding a table means
   adding a migration: the destructive fallback exists but wipes the Auto Text cache.
 - **Tap Enter must stay a newline.** Only the 400ms hold opens the calculator, and the
   release that follows it is swallowed by a timestamp (`ENTER_LONG_PRESS_TAP_WINDOW_MS`),

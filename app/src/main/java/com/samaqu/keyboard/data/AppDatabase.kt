@@ -14,7 +14,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         CachedProduct::class,
         CachedVariant::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -71,6 +71,18 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * v4 adds the parcel weight (grams) to the product and variant caches, which the invoice
+         * adds up to pre-fill the Ongkir panel. `NOT NULL DEFAULT 0` matches what Room expects for
+         * `@ColumnInfo(defaultValue = "0") val weight: Int`; the template cache survives as before.
+         */
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `cached_products` ADD COLUMN `weight` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE `cached_variants` ADD COLUMN `weight` INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         fun get(ctx: Context): AppDatabase =
             INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
@@ -78,7 +90,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "samaqu.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .fallbackToDestructiveMigration()
                     .build()
                     .also { INSTANCE = it }

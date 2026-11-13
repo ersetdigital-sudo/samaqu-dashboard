@@ -162,3 +162,6 @@ Sebelum mulai: buka Settings app, pastikan Supabase URL berisi `https://bzoitgiv
 - [ ] Salin pesan customer yang berisi `Nama:`, `No. WA:`, `Alamat:` lalu tekan **Tempel format** di panel Invoice: nama, WA (digit saja, 62/+62 jadi 0), dan alamat terisi; salinan kosong atau tanpa data menampilkan pesan.
 - [ ] Ketik di kolom **Ongkir** atau **harga satuan**: angka otomatis diberi titik ribuan (`9000` jadi `9.000`), dan total serta invoice memakai angka yang benar.
 - [ ] Pilih produk: barisnya terbuka (− qty +, harga, **Simpan**); tekan **Simpan** dan baris jadi ringkas read-only (`1 x Rp359.000` dan total baris). **Ubah** membukanya lagi; memilih produk lain menyimpan baris sebelumnya otomatis.
+- [ ] Setelah update, keyboard tetap terbuka normal (migrasi database v4 menambah kolom berat). Buka **+ Produk** sekali agar berat produk ikut tersinkron.
+- [ ] Isi alamat di invoice (misalnya `..., KOTA DEPOK, PANCORAN MAS, JAWA BARAT, ID, 16431`), tambah produk, lalu tekan **Cek ongkir**: Kecamatan dan Kota terisi dari alamat, dan Berat adalah jumlah (qty × berat tiap produk/ukuran) dalam gram, bukan 1000 tetap.
+- [ ] Alamat dengan `Kec. Ciracas, Jakarta Timur` juga terbaca; alamat tanpa kata kecamatan/kota membiarkan kolomnya kosong untuk diisi manual.

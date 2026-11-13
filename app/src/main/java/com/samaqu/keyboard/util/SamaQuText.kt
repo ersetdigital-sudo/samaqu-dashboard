@@ -139,6 +139,13 @@ object SamaQuText {
     private fun wordsOf(text: String): Set<String> =
         Regex("[\\p{L}\\p{N}]+").findAll(text.lowercase()).map { it.value }.toSet()
 
+    /**
+     * Parcel weight in grams for one piece: the size's own weight when the store set one,
+     * otherwise the product's, otherwise 0 (unknown).
+     */
+    fun weightOf(product: CachedProduct, variant: CachedVariant?): Int =
+        variant?.weight?.takeIf { it > 0 } ?: product.weight.coerceAtLeast(0)
+
     /** Price that applies to a variant: its own override when the store sets one. */
     fun priceOf(product: CachedProduct, variant: CachedVariant?): Long =
         variant?.priceOverride?.takeIf { it > 0 } ?: product.price

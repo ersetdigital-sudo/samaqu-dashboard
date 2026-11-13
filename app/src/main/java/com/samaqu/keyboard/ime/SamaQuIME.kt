@@ -47,6 +47,7 @@ import com.samaqu.keyboard.ui.ProductAdapter
 import com.samaqu.keyboard.ui.TemplateAdapter
 import com.samaqu.keyboard.ui.VariantAdapter
 import com.samaqu.keyboard.util.Backspace
+import com.samaqu.keyboard.util.AreaParser
 import com.samaqu.keyboard.util.CalculatorEngine
 import com.samaqu.keyboard.util.CustomerInfoParser
 import com.samaqu.keyboard.util.FieldInput
@@ -338,9 +339,7 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         view.findViewById<LinearLayout>(R.id.btnInvoice).setOnClickListener {
             showPanel(invoicePanel)
         }
-        view.findViewById<LinearLayout>(R.id.btnOngkir).setOnClickListener {
-            showPanel(ongkirPanel)
-        }
+        view.findViewById<LinearLayout>(R.id.btnOngkir).setOnClickListener { openOngkirPanel() }
         view.findViewById<LinearLayout>(R.id.btnPending).setOnClickListener {
             showPanel(pendingPanel)
             loadPendingOrders()
@@ -383,7 +382,7 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
             updateInvoiceTotal()
         }
 
-        view.findViewById<TextView>(R.id.btnInvoiceOngkir).setOnClickListener { showPanel(ongkirPanel) }
+        view.findViewById<TextView>(R.id.btnInvoiceOngkir).setOnClickListener { openOngkirPanel() }
         view.findViewById<TextView>(R.id.btnPasteFormat).setOnClickListener { pasteCustomerFormat(view) }
 
         view.findViewById<TextView>(R.id.invBtnGenerate).setOnClickListener {
@@ -843,6 +842,38 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         )
     }
 
+    /**
+     * Opens the Ongkir panel pre-filled from the invoice being built: the district and city
+     * found in its address, and the weight of everything ordered. A value the invoice cannot
+     * supply is left as it is, so the panel still works on its own from the toolbar.
+     */
+    private fun openOngkirPanel() {
+        rootView?.let { prefillOngkirFromInvoice(it) }
+        showPanel(ongkirPanel)
+    }
+
+    private fun prefillOngkirFromInvoice(view: View) {
+        val area = AreaParser.parse(view.findViewById<EditText>(R.id.invAddress).text.toString())
+        val grams = invoiceDraft.totalWeightGram
+        var changed = false
+        fun set(id: Int, value: String) {
+            val field = view.findViewById<EditText>(id)
+            if (value.isNotBlank() && field.text.toString() != value) {
+                field.setText(value)
+                changed = true
+            }
+        }
+        set(R.id.ongkirDistrict, area.district)
+        set(R.id.ongkirCity, area.city)
+        if (grams > 0) set(R.id.ongkirWeight, grams.toString())
+
+        // Prices quoted for the old destination or weight must not be picked by mistake.
+        if (changed) {
+            view.findViewById<LinearLayout>(R.id.ongkirResults).removeAllViews()
+            view.findViewById<TextView>(R.id.ongkirStatus).visibility = View.GONE
+        }
+    }
+
     /** Puts a quoted cost, with its courier service and estimate, into the invoice and switches to it. */
     private fun useOngkir(option: JntCostOption) {
         val view = rootView ?: return
@@ -1211,7 +1242,9 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         invoiceDraft = if (existing >= 0) {
             invoiceDraft.withQty(existing, invoiceDraft.items[existing].qty + 1)
         } else {
-            invoiceDraft.withItem(InvoiceItem(label, 1, SamaQuText.priceOf(product, variant)))
+            invoiceDraft.withItem(
+                InvoiceItem(label, 1, SamaQuText.priceOf(product, variant), SamaQuText.weightOf(product, variant))
+            )
         }
         editingItem = if (existing >= 0) existing else invoiceDraft.items.lastIndex
         renderInvoiceItems()
