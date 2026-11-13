@@ -199,4 +199,8 @@
     <string name="invoice_need_item">Pilih minimal satu produk</string>
     <string name="invoice_item_price">Harga satuan</string>
     <string name="invoice_send_failed">Belum terkirim ke chat. Ketuk kolom ketik di chat lalu coba lagi.</string>
+    <string name="btn_paste_format">Tempel format</string>
+    <string name="invoice_paste_empty">Belum ada yang disalin. Salin pesan customer dulu.</string>
+    <string name="invoice_paste_unknown">Format tidak dikenali. Butuh baris seperti Nama:, No. WA:, atau Alamat:.</string>
+    <string name="invoice_paste_done">Terisi: %1$s</string>
 </resources>

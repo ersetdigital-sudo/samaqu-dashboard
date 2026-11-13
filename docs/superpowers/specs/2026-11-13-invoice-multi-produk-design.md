@@ -13,18 +13,24 @@ Invoice builder di keyboard SAMAQU belum cocok dengan cara tim mengirim invoice 
 Format invoice yang dipakai tim sekarang (dikirim manual):
 
 ```
-Berikut invoice pesanannya ya Ka Muhammad Nasir.
+Berikut invoice pesanannya ya Ka Budi Santoso.
 
 INVOICE PESANAN SAMAQU
-Nama: Muhammad Nasir
-No. WA: 0852-6041-2200
-Alamat: Jl. Tgk. Wahab Dahlawi ..., Kota Lhokseumawe, Aceh 24352
+
+Nama: Budi Santoso
+No. WA: 08123456789
+Alamat: Jl. Sudirman No.123, Kel. Contoh, Kec. Ciracas, Jakarta Timur, DKI Jakarta 13730
 
 Pesanan:
-1 x Thobe Broken White Imalah (kain B-01), size M - Rp374.000
-Ongkir J&T ECO (estimasi 3-7 hari): Rp40.500
+1 x Thobe Broken White Jiharkah (kain B-01), size M
+Rp359.000
 
-Total: Rp414.500
+1 x Cover Thobe + Hanger
+Rp35.000
+
+Ongkir J&T EZ (estimasi 2-4 hari): Rp9.000
+
+Total: Rp403.000
 
 Pembayaran via transfer:
 Bank BSI 7153280058
@@ -153,3 +159,4 @@ Sebelum mulai: buka Settings app, pastikan Supabase URL berisi `https://bzoitgiv
 - [ ] Lihat format estimasi asli dari Cek Ongkir (apakah `3-7` atau `3-7 hari`) dan pastikan baris ongkir invoice terbaca wajar.
 - [ ] Saat panel apa pun terbuka (Invoice, Ongkir, Auto Text, Pending, emoji, kalkulator, picker), baris ikon toolbar hilang; menekan ✕ memunculkannya lagi.
 - [ ] Di form Invoice, Enter berpindah Nama → No. WA → Alamat → Ongkir; kolom yang sedang diketik selalu terlihat; Total dan tombol Generate berada dalam satu baris.
+- [ ] Salin pesan customer yang berisi `Nama:`, `No. WA:`, `Alamat:` lalu tekan **Tempel format** di panel Invoice: nama, WA (digit saja, 62/+62 jadi 0), dan alamat terisi; salinan kosong atau tanpa data menampilkan pesan.

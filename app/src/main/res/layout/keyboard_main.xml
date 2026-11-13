@@ -347,6 +347,23 @@
                 android:textSize="13sp"
                 android:textStyle="bold" />
 
+            <!-- Reads name, WA and address out of the message copied from the customer. -->
+            <TextView
+                android:id="@+id/btnPasteFormat"
+                android:layout_width="wrap_content"
+                android:layout_height="30dp"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/pill_bg"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:text="@string/btn_paste_format"
+                android:textColor="@color/brand_purple"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
             <TextView
                 android:id="@+id/btnCloseInvoice"
                 android:layout_width="36dp"

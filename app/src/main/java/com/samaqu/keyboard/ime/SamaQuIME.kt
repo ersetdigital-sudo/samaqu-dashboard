@@ -1,5 +1,6 @@
 package com.samaqu.keyboard.ime
 
+import android.content.ClipboardManager
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Typeface
@@ -47,6 +48,7 @@ import com.samaqu.keyboard.ui.TemplateAdapter
 import com.samaqu.keyboard.ui.VariantAdapter
 import com.samaqu.keyboard.util.Backspace
 import com.samaqu.keyboard.util.CalculatorEngine
+import com.samaqu.keyboard.util.CustomerInfoParser
 import com.samaqu.keyboard.util.FieldInput
 import com.samaqu.keyboard.util.FieldOrder
 import com.samaqu.keyboard.util.InvoiceDraft
@@ -376,6 +378,7 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         }
 
         view.findViewById<TextView>(R.id.btnInvoiceOngkir).setOnClickListener { showPanel(ongkirPanel) }
+        view.findViewById<TextView>(R.id.btnPasteFormat).setOnClickListener { pasteCustomerFormat(view) }
 
         view.findViewById<TextView>(R.id.invBtnGenerate).setOnClickListener {
             val draft = currentInvoice(view)
@@ -396,6 +399,34 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         }
 
         renderInvoiceItems()
+    }
+
+    /**
+     * "Tempel format": reads the copied customer message and fills name, WA and address with
+     * whatever [CustomerInfoParser] finds. Fields it finds nothing for are left as they are.
+     */
+    private fun pasteCustomerFormat(view: View) {
+        val clip = getSystemService(ClipboardManager::class.java)?.primaryClip
+        val text = clip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(this)?.toString().orEmpty()
+        if (text.isBlank()) {
+            Toast.makeText(this, R.string.invoice_paste_empty, Toast.LENGTH_SHORT).show()
+            return
+        }
+        val info = CustomerInfoParser.parse(text)
+        if (info.isEmpty) {
+            Toast.makeText(this, R.string.invoice_paste_unknown, Toast.LENGTH_LONG).show()
+            return
+        }
+        val filled = mutableListOf<String>()
+        fun put(id: Int, value: String, what: String) {
+            if (value.isBlank()) return
+            view.findViewById<EditText>(id).setText(value)
+            filled += what
+        }
+        put(R.id.invBuyer, info.name, "nama")
+        put(R.id.invPhone, info.phone, "WA")
+        put(R.id.invAddress, info.address, "alamat")
+        Toast.makeText(this, getString(R.string.invoice_paste_done, filled.joinToString(", ")), Toast.LENGTH_SHORT).show()
     }
 
     /** Makes [field] receive the keyboard's keys when touched, and highlights it alone. */
