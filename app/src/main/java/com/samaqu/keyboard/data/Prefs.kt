@@ -25,6 +25,14 @@ class Prefs(ctx: Context) {
         get() = sp.getString(KEY_SUPABASE_ANON_KEY, SupabaseConfig.ANON_KEY) ?: SupabaseConfig.ANON_KEY
         set(v) = sp.edit().putString(KEY_SUPABASE_ANON_KEY, v).apply()
 
+    /**
+     * Bank block printed on invoices, e.g. `Bank BSI 7153280058` / `a.n. ...`. Filled by the
+     * catalogue sync from the store's `payment_methods`; empty until the first successful sync.
+     */
+    var paymentText: String
+        get() = sp.getString(KEY_PAYMENT_TEXT, "") ?: ""
+        set(v) = sp.edit().putString(KEY_PAYMENT_TEXT, v).apply()
+
     /** Count of pending orders seen at the last poll (used to detect new ones). */
     var lastPendingCount: Int
         get() = sp.getInt(KEY_LAST_PENDING, 0)
@@ -63,6 +71,7 @@ class Prefs(ctx: Context) {
         private const val KEY_SUPABASE_URL = "supabase_url"
         private const val KEY_SUPABASE_ANON_KEY = "supabase_anon_key"
         private const val KEY_LAST_PENDING = "last_pending"
+        private const val KEY_PAYMENT_TEXT = "payment_text"
         private const val KEY_KEY_SIZE = "key_size"
         private const val KEY_DASHBOARD_URL = "dashboard_url"
         private const val KEY_OVERLAY_ENABLED = "overlay_enabled"

@@ -5,6 +5,7 @@ import com.samaqu.keyboard.network.ApiService
 import com.samaqu.keyboard.network.Product
 import com.samaqu.keyboard.network.RetrofitClient
 import com.samaqu.keyboard.network.Variant
+import com.samaqu.keyboard.util.InvoiceFormatter
 
 /**
  * The store's product catalogue, for the invoice's product picker.
@@ -39,29 +40,22 @@ class ProductRepository(ctx: Context) {
         val variants = client.getVariants()
 
         dao.clear()
-        dao.insertAll(products.map { it.toCached() })
+        dao.insertAll(products.map { it.toCachedProduct() })
         dao.clearVariants()
         dao.insertVariants(variants.map { it.toCached() })
+
+        // The bank accounts for invoices ride along with the catalogue sync, but a failure here
+        // must neither fail the sync nor wipe the accounts already stored on the phone.
+        runCatching { InvoiceFormatter.paymentText(client.getPaymentMethods()) }
+            .getOrNull()
+            ?.takeIf { it.isNotBlank() }
+            ?.let { prefs.paymentText = it }
     }
 
     private fun api(): ApiService {
         RetrofitClient.init(prefs.supabaseUrl, prefs.supabaseAnonKey)
         return RetrofitClient.api
     }
-
-    private fun Product.toCached() = CachedProduct(
-        id = id,
-        name = name.orEmpty().trim(),
-        category = category.orEmpty().trim(),
-        series = series.orEmpty().trim(),
-        kain = kain.orEmpty().trim(),
-        price = price,
-        // 60 of the 61 rows only carry the placeholder colour, and printing
-        // "default" in the picker would just be noise.
-        colors = colors.filterNot { it.equals("default", ignoreCase = true) }
-            .joinToString(", ")
-            .trim()
-    )
 
     /**
      * The cache mirrors the table, "default" colour included: the placeholder is dropped when
@@ -78,3 +72,23 @@ class ProductRepository(ctx: Context) {
         displayOrder = displayOrder
     )
 }
+
+/**
+ * Cache row for a store product.
+ *
+ * The fabric code is the name of the embedded `jenis_kain` row (`B-01`); the products' own
+ * `kain` column is only a fallback because the store leaves it empty.
+ */
+internal fun Product.toCachedProduct() = CachedProduct(
+    id = id,
+    name = name.orEmpty().trim(),
+    category = category.orEmpty().trim(),
+    series = series.orEmpty().trim(),
+    kain = jenisKain?.name?.trim().orEmpty().ifBlank { kain.orEmpty().trim() },
+    price = price,
+    // Most rows only carry the placeholder colour, and printing "default" in the picker
+    // would just be noise.
+    colors = colors.filterNot { it.equals("default", ignoreCase = true) }
+        .joinToString(", ")
+        .trim()
+)

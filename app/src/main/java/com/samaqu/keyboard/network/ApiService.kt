@@ -18,13 +18,14 @@ import retrofit2.http.Url
  * [RetrofitClient], so no method needs to pass credentials itself.
  *
  * The two catalogue queries ([getProducts], [getVariants]) are deliberately unpaginated: the
- * store holds 61 products and 305 variants, and one round trip beats paging a list a CS opens
+ * store holds about 120 products and 590 variants, and one round trip beats paging a list a CS opens
  * for a second at a time. The `order=` clauses are what keep the result stable, and PostgREST
  * stops at 1000 rows per request - if the catalogue ever grows past that, the picker needs real
  * paging rather than a bigger limit, or the tail would silently go missing.
  *
  * The `select=` projections keep payloads small and must match the live schema of the
- * `samaqu` project (see `supabase_setup.sql` for the tables this app owns):
+ * store's Supabase project, `SAMAQU WEBSITE` (see `supabase_setup.sql` for the tables this app
+ * owned in the previous project):
  *  - `categories` / `templates` are read-only tables created for Auto Text sync. For
  *    [getTemplates] PostgREST's embedded resource syntax `templates(...)` nests them inside
  *    every category, which relies on the foreign key `templates.category_id -> categories.id`.
@@ -42,8 +43,17 @@ interface ApiService {
     @GET("rest/v1/orders?select=id,order_number,customer_name,status,total,created_at&order=created_at.desc")
     suspend fun getOrders(): List<OrderItem>
 
-    @GET("rest/v1/products?select=id,name,category,series,kain,price,colors,image&order=name.asc")
+    /**
+     * Catalogue with the fabric code embedded: `jenis_kain(name)` follows the foreign key
+     * `products.jenis_kain_id -> jenis_kain.id`. The legacy `kain` column is still selected as
+     * a fallback although the store leaves it empty today.
+     */
+    @GET("rest/v1/products?select=id,name,category,series,kain,price,colors,image,jenis_kain(name)&order=name.asc")
     suspend fun getProducts(): List<Product>
+
+    /** Active bank accounts shown on invoices, in the store's display order. */
+    @GET("rest/v1/payment_methods?select=method_type,bank_name,account_name,account_number,is_active&method_type=eq.bank&is_active=eq.true&order=display_order.asc")
+    suspend fun getPaymentMethods(): List<PaymentMethod>
 
     /**
      * Size/colour grid of every product, in one call (~300 rows today). Small enough to cache

@@ -60,7 +60,24 @@ data class Product(
     val kain: String? = null,
     val price: Long = 0,
     val colors: List<String> = emptyList(),
-    val image: String? = null
+    val image: String? = null,
+    /** The fabric type embedded through `jenis_kain(name)`; its name is the code (e.g. `B-01`). */
+    @SerializedName("jenis_kain") val jenisKain: JenisKainRef? = null
+)
+
+/** The `jenis_kain` row embedded in a product. */
+data class JenisKainRef(val name: String? = null)
+
+/**
+ * One row of `public.payment_methods`. Only `method_type = "bank"` rows carry an account;
+ * the others (e.g. `mayar`, online payment) leave the bank columns null.
+ */
+data class PaymentMethod(
+    @SerializedName("method_type") val methodType: String? = null,
+    @SerializedName("bank_name") val bankName: String? = null,
+    @SerializedName("account_name") val accountName: String? = null,
+    @SerializedName("account_number") val accountNumber: String? = null,
+    @SerializedName("is_active") val isActive: Boolean = true
 )
 
 /**

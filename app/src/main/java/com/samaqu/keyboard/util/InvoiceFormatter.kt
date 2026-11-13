@@ -1,5 +1,7 @@
 package com.samaqu.keyboard.util
 
+import com.samaqu.keyboard.network.PaymentMethod
+
 /** One line of an invoice: what was ordered, how many, and the price of one. */
 data class InvoiceItem(
     val label: String,
@@ -75,6 +77,20 @@ object InvoiceFormatter {
             append(": ").append(rupiah(s.cost))
         }
     }
+
+    /**
+     * Bank block for the invoice: `Bank BSI 7153280058` then `a.n. Ardo Babus Abdullah`, one
+     * pair per account. Accounts without a number are skipped; no bank gives an empty string.
+     */
+    fun paymentText(methods: List<PaymentMethod>): String =
+        methods
+            .filter { it.methodType.equals("bank", ignoreCase = true) && !it.accountNumber.isNullOrBlank() }
+            .joinToString("\n") { m ->
+                val head = listOfNotNull(m.bankName?.trim(), m.accountNumber?.trim())
+                    .filter { it.isNotEmpty() }
+                    .joinToString(" ")
+                if (m.accountName.isNullOrBlank()) head else "$head\na.n. ${m.accountName.trim()}"
+            }
 
     /**
      * The whole invoice. [paymentText] is the bank block (already multi-line) and [closing]

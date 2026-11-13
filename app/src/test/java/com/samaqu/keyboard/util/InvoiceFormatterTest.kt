@@ -1,5 +1,6 @@
 package com.samaqu.keyboard.util
 
+import com.samaqu.keyboard.network.PaymentMethod
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -166,5 +167,36 @@ class InvoiceFormatterTest {
 
         assertEquals(10_000L, draft.items[0].unitPrice)
         assertEquals(25_000L, draft.items[1].unitPrice)
+    }
+
+    // ------------------------------------------------------------------- payment text
+
+    private fun bank(name: String?, number: String?, holder: String?) =
+        PaymentMethod(methodType = "bank", bankName = name, accountName = holder, accountNumber = number)
+
+    @Test
+    fun `paymentText writes bank, number and account name`() {
+        val text = InvoiceFormatter.paymentText(listOf(bank("Bank BSI", "7153280058", "Ardo Babus Abdullah")))
+
+        assertEquals("Bank BSI 7153280058\na.n. Ardo Babus Abdullah", text)
+    }
+
+    @Test
+    fun `paymentText joins several banks and skips incomplete ones`() {
+        val text = InvoiceFormatter.paymentText(
+            listOf(
+                bank("Bank BSI", "7153280058", "Ardo Babus Abdullah"),
+                bank("Bank X", null, "Nobody"),
+                bank("BCA", "123", "Ardo")
+            )
+        )
+
+        assertEquals("Bank BSI 7153280058\na.n. Ardo Babus Abdullah\nBCA 123\na.n. Ardo", text)
+    }
+
+    @Test
+    fun `paymentText is empty when there is no bank`() {
+        assertEquals("", InvoiceFormatter.paymentText(emptyList()))
+        assertEquals("", InvoiceFormatter.paymentText(listOf(PaymentMethod(methodType = "mayar"))))
     }
 }
