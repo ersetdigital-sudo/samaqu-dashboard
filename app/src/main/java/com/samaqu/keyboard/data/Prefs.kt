@@ -3,6 +3,7 @@ package com.samaqu.keyboard.data
 import android.content.Context
 import android.content.SharedPreferences
 import com.samaqu.keyboard.network.SupabaseConfig
+import com.samaqu.keyboard.util.SavedSettings
 
 /**
  * Thin wrapper around SharedPreferences ("samaqu_prefs").
@@ -14,15 +15,21 @@ class Prefs(ctx: Context) {
 
     /**
      * Supabase project URL. Falls back to the value compiled into [SupabaseConfig], which is
-     * also what a fresh install uses before anything is saved in Settings.
+     * also what a fresh install uses before anything is saved in Settings. A saved value that
+     * is the previous project's URL counts as "not saved", so phones that stored the old
+     * default move to the new project; a URL typed on purpose is left alone.
      */
     var supabaseUrl: String
-        get() = sp.getString(KEY_SUPABASE_URL, SupabaseConfig.PROJECT_URL) ?: SupabaseConfig.PROJECT_URL
+        get() = SavedSettings.resolve(
+            sp.getString(KEY_SUPABASE_URL, null), SupabaseConfig.PROJECT_URL, SupabaseConfig.LEGACY_URLS
+        )
         set(v) = sp.edit().putString(KEY_SUPABASE_URL, v).apply()
 
-    /** Supabase "anon public" key. Sent as both `apikey` and `Authorization: Bearer`. */
+    /** Supabase "anon public" key, with the same legacy handling as [supabaseUrl]. */
     var supabaseAnonKey: String
-        get() = sp.getString(KEY_SUPABASE_ANON_KEY, SupabaseConfig.ANON_KEY) ?: SupabaseConfig.ANON_KEY
+        get() = SavedSettings.resolve(
+            sp.getString(KEY_SUPABASE_ANON_KEY, null), SupabaseConfig.ANON_KEY, SupabaseConfig.LEGACY_ANON_KEYS
+        )
         set(v) = sp.edit().putString(KEY_SUPABASE_ANON_KEY, v).apply()
 
     /**
