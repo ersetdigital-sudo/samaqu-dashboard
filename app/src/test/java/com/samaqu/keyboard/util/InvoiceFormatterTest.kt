@@ -306,4 +306,21 @@ class InvoiceFormatterTest {
             InvoiceFormatter.shippingLine(InvoiceShipping("J&T", "J&T ECO", "", 40_500))
         )
     }
+
+    // ------------------------------------------ the short label under the Ongkir field
+
+    @Test
+    fun `the label names the courier service once and the estimate`() {
+        assertEquals("J&T ECO • 3-7 hari", InvoiceFormatter.shippingSummary(option(realEco).toInvoiceShipping()))
+        assertEquals(
+            "J&T EZ (Reguler) • 2-4 hari",
+            InvoiceFormatter.shippingSummary(InvoiceShipping("J&T", "J&T EZ (Reguler)", "2-4 hari", 58_000))
+        )
+    }
+
+    @Test
+    fun `the label skips what is missing`() {
+        assertEquals("J&T ECO", InvoiceFormatter.shippingSummary(InvoiceShipping("J&T", "ECO", "", 0)))
+        assertEquals("", InvoiceFormatter.shippingSummary(InvoiceShipping(cost = 5_000)))
+    }
 }

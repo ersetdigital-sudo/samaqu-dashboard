@@ -78,11 +78,7 @@ object InvoiceFormatter {
 
     /** `Ongkir J&T ECO (estimasi 3-7 hari): Rp40.500`, tidied when courier, service or estimate is missing. */
     fun shippingLine(s: InvoiceShipping): String {
-        val courier = s.courier.trim()
-        val service = s.service.trim()
-        // The store's long service name can already start with the courier ("J&T ECO (Hemat)").
-        val name = if (service.startsWith(courier, ignoreCase = true)) service
-        else listOf(courier, service).filter { it.isNotEmpty() }.joinToString(" ")
+        val name = shippingName(s)
         val etd = s.etd.trim()
         return buildString {
             append("Ongkir")
@@ -94,6 +90,18 @@ object InvoiceFormatter {
             append(": ").append(rupiah(s.cost))
         }
     }
+
+    /** The courier and its service said once: `J&T ECO`. The service may already start with the courier. */
+    private fun shippingName(s: InvoiceShipping): String {
+        val courier = s.courier.trim()
+        val service = s.service.trim()
+        return if (service.startsWith(courier, ignoreCase = true)) service
+        else listOf(courier, service).filter { it.isNotEmpty() }.joinToString(" ")
+    }
+
+    /** The short label under the Ongkir field: `J&T ECO • 3-7 hari`; empty when nothing is known. */
+    fun shippingSummary(s: InvoiceShipping): String =
+        listOf(shippingName(s), s.etd.trim()).filter { it.isNotEmpty() }.joinToString(" • ")
 
     /**
      * Bank block for the invoice: `Bank BSI 7153280058` then `a.n. Ardo Babus Abdullah`, one

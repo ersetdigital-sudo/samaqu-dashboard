@@ -499,8 +499,22 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
             view.findViewById<EditText>(it).setText("")
         }
         view.findViewById<TextView>(R.id.invShippingLabel).visibility = View.GONE
+        resetOngkirPanel(view)
         releaseFocusedField()
         renderInvoiceItems()
+    }
+
+    /**
+     * Forgets the previous customer's quote too: destination, weight and the listed prices.
+     * Left behind, they would be reused for the next invoice, and a price quoted for another
+     * address could be picked by mistake.
+     */
+    private fun resetOngkirPanel(view: View) {
+        view.findViewById<EditText>(R.id.ongkirDistrict).setText("")
+        view.findViewById<EditText>(R.id.ongkirCity).setText("")
+        view.findViewById<EditText>(R.id.ongkirWeight).setText(DEFAULT_WEIGHT_GRAM.toString())
+        view.findViewById<LinearLayout>(R.id.ongkirResults).removeAllViews()
+        view.findViewById<TextView>(R.id.ongkirStatus).visibility = View.GONE
     }
 
     /** Redraws one row per product line (label, quantity buttons, unit price, remove). */
@@ -880,11 +894,7 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         shippingChoice = option.toInvoiceShipping()
         view.findViewById<EditText>(R.id.invOngkir).setText(option.cost.toString())
         view.findViewById<TextView>(R.id.invShippingLabel).apply {
-            text = buildString {
-                append(option.courier.trim())
-                if (option.service.isNotBlank()) append(' ').append(option.service.trim())
-                if (option.etd.isNotBlank()) append(" • ").append(option.etd.trim())
-            }
+            text = InvoiceFormatter.shippingSummary(option.toInvoiceShipping())
             visibility = View.VISIBLE
         }
         showPanel(invoicePanel)
