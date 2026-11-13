@@ -48,6 +48,7 @@ import com.samaqu.keyboard.ui.VariantAdapter
 import com.samaqu.keyboard.util.Backspace
 import com.samaqu.keyboard.util.CalculatorEngine
 import com.samaqu.keyboard.util.FieldInput
+import com.samaqu.keyboard.util.FieldOrder
 import com.samaqu.keyboard.util.InvoiceDraft
 import com.samaqu.keyboard.util.InvoiceFormatter
 import com.samaqu.keyboard.util.InvoiceItem
@@ -390,13 +391,35 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
     private fun bindInvoiceField(field: EditText) {
         invoiceFields.add(field)
         field.setOnTouchListener { _, event ->
-            if (event.action == android.view.MotionEvent.ACTION_DOWN) {
-                focusedField = field
-                onFieldFocused(field)
-                invoiceFields.forEach { it.setBackgroundResource(R.drawable.field_bg) }
-                field.setBackgroundResource(R.drawable.field_bg_active)
-            }
+            if (event.action == android.view.MotionEvent.ACTION_DOWN) focusInvoiceField(field)
             false
+        }
+    }
+
+    /** Sends the keys to [field], highlights it alone and keeps it on screen. */
+    private fun focusInvoiceField(field: EditText) {
+        focusedField = field
+        onFieldFocused(field)
+        invoiceFields.forEach { it.setBackgroundResource(R.drawable.field_bg) }
+        field.setBackgroundResource(R.drawable.field_bg_active)
+        // The panel and the deck leave little room: scroll just enough to show the field typed into.
+        field.post { field.requestRectangleOnScreen(android.graphics.Rect(0, 0, field.width, field.height), false) }
+    }
+
+    /**
+     * Enter inside the invoice form moves on to the next field (buyer, WA, address, shipping).
+     * Anywhere else, and after the last field, it simply ends typing as it always did.
+     */
+    private fun onEnterInField() {
+        val view = rootView
+        val current = focusedField
+        val nextId = if (view != null && current != null) FieldOrder.next(current.id, INVOICE_FIELD_ORDER) else null
+        val next = nextId?.let { view?.findViewById<EditText>(it) }
+        if (next != null) {
+            focusInvoiceField(next)
+        } else {
+            focusedField = null
+            restoreLetterDeck()
         }
     }
 
@@ -1062,6 +1085,9 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
     private fun showPanel(panel: View?) {
         allPanels().forEach { it?.visibility = View.GONE }
         panel?.visibility = View.VISIBLE
+        // An open panel has its own close button, so the toolbar steps aside and gives its
+        // row to the panel; closing the panel brings it back (see hideAllPanels).
+        setToolbarVisible(panel == null)
 
         // Key taps go to the selected in-keyboard field. If that field belongs to a panel
         // that just went off screen it has to stop receiving them, or the keyboard would
@@ -1192,9 +1218,14 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         return (maxDp * resources.displayMetrics.density).toInt()
     }
 
+    private fun setToolbarVisible(visible: Boolean) {
+        rootView?.findViewById<View>(R.id.toolbar)?.visibility = if (visible) View.VISIBLE else View.GONE
+    }
+
     private fun hideAllPanels() {
         allPanels().forEach { it?.visibility = View.GONE }
         keyboardView?.visibility = View.VISIBLE
+        setToolbarVisible(true)
         releaseFocusedField()
         setActiveToolbar(null)
         // Leaving the calculator drops any pending long-press marker, so the next Enter tap
@@ -1564,10 +1595,7 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
                 // which inserted an invisible char and left caps untouched - so capitals
                 // stopped working as soon as any invoice/ongkir field was selected.
                 SamaQuKeyboardView.CODE_SHIFT -> toggleShift()
-                SamaQuKeyboardView.CODE_ENTER -> {
-                    focusedField = null
-                    restoreLetterDeck()
-                }
+                SamaQuKeyboardView.CODE_ENTER -> onEnterInField()
                 else -> typeToField(primaryCode)
             }
             return
@@ -1721,6 +1749,9 @@ class SamaQuIME : InputMethodService(), KeyboardView.OnKeyboardActionListener {
         private const val DEFAULT_WEIGHT_GRAM = 1000
 
         /** Toolbar height from keyboard_main.xml, reserved when panel heights are capped. */
+        /** The order Enter walks through the invoice form. */
+        private val INVOICE_FIELD_ORDER = listOf(R.id.invBuyer, R.id.invPhone, R.id.invAddress, R.id.invOngkir)
+
         private const val TOOLBAR_HEIGHT_DP = 46
 
         /** Strip of the app, and of its input field, that must stay visible above the IME. */

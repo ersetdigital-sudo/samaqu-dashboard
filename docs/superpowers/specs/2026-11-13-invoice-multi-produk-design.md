@@ -151,3 +151,5 @@ Sebelum mulai: buka Settings app, pastikan Supabase URL berisi `https://bzoitgiv
 - [ ] Tekan Generate saat kolom chat tidak aktif: muncul pesan "Belum terkirim", formulir tidak dikosongkan.
 - [ ] Setelah update dari versi lama, buka picker sebelum sync selesai: katalog tidak menampilkan harga lama (kosong atau memuat dulu).
 - [ ] Lihat format estimasi asli dari Cek Ongkir (apakah `3-7` atau `3-7 hari`) dan pastikan baris ongkir invoice terbaca wajar.
+- [ ] Saat panel apa pun terbuka (Invoice, Ongkir, Auto Text, Pending, emoji, kalkulator, picker), baris ikon toolbar hilang; menekan ✕ memunculkannya lagi.
+- [ ] Di form Invoice, Enter berpindah Nama → No. WA → Alamat → Ongkir; kolom yang sedang diketik selalu terlihat; Total dan tombol Generate berada dalam satu baris.
