@@ -37,6 +37,8 @@ class SettingsActivity : AppCompatActivity() {
         etSupabaseUrl.setText(prefs.supabaseUrl)
         etSupabaseAnonKey.setText(prefs.supabaseAnonKey)
         etDashboardUrl.setText(prefs.dashboardUrl)
+        val etInvoiceClosing = findViewById<TextInputEditText>(R.id.etInvoiceClosing)
+        etInvoiceClosing.setText(prefs.invoiceClosing)
         rgKeySize.check(
             when (prefs.keySize) {
                 Prefs.KEY_SIZE_SMALL -> R.id.rbSmall
@@ -49,6 +51,7 @@ class SettingsActivity : AppCompatActivity() {
             prefs.supabaseUrl = etSupabaseUrl.text.toString().trim()
             prefs.supabaseAnonKey = etSupabaseAnonKey.text.toString().trim()
             prefs.dashboardUrl = etDashboardUrl.text.toString().trim()
+            prefs.invoiceClosing = etInvoiceClosing.text.toString().trim()
             prefs.keySize = when (rgKeySize.checkedRadioButtonId) {
                 R.id.rbSmall -> Prefs.KEY_SIZE_SMALL
                 R.id.rbLarge -> Prefs.KEY_SIZE_LARGE

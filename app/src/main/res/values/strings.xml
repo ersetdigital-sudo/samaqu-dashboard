@@ -106,6 +106,8 @@
     <string name="dashboard_error_title">Gagal memuat halaman</string>
     <string name="dashboard_error_detail">Periksa koneksi internet, lalu tekan Coba Lagi.</string>
     <string name="hint_dashboard_url">URL Dashboard (opsional)</string>
+    <string name="hint_invoice_closing">Kalimat penutup invoice</string>
+    <string name="hint_invoice_closing_note">Ditulis di baris terakhir setiap invoice. Kosongkan jika tidak ingin ada kalimat penutup.</string>
     <string name="hint_dashboard_url_note">Kosongkan untuk memakai dashboard web bawaan, tempat mengatur template chat &amp; kategori. Ringkasan offline bisa dibuka dari menu Dashboard.</string>
 
     <!-- Dashboard ringkasan lokal (tanpa login) -->

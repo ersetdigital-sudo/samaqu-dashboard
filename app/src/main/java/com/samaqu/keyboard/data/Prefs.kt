@@ -3,6 +3,7 @@ package com.samaqu.keyboard.data
 import android.content.Context
 import android.content.SharedPreferences
 import com.samaqu.keyboard.network.SupabaseConfig
+import com.samaqu.keyboard.util.InvoiceFormatter
 import com.samaqu.keyboard.util.SavedSettings
 
 /**
@@ -39,6 +40,15 @@ class Prefs(ctx: Context) {
     var paymentText: String
         get() = sp.getString(KEY_PAYMENT_TEXT, "") ?: ""
         set(v) = sp.edit().putString(KEY_PAYMENT_TEXT, v).apply()
+
+    /**
+     * Last sentence of an invoice. [InvoiceFormatter.DEFAULT_CLOSING] until the owner saves
+     * something; an empty value saved on purpose stays empty (the sentence is then left out).
+     */
+    var invoiceClosing: String
+        get() = if (sp.contains(KEY_INVOICE_CLOSING)) sp.getString(KEY_INVOICE_CLOSING, "").orEmpty()
+        else InvoiceFormatter.DEFAULT_CLOSING
+        set(v) = sp.edit().putString(KEY_INVOICE_CLOSING, v).apply()
 
     /** Count of pending orders seen at the last poll (used to detect new ones). */
     var lastPendingCount: Int
@@ -79,6 +89,7 @@ class Prefs(ctx: Context) {
         private const val KEY_SUPABASE_ANON_KEY = "supabase_anon_key"
         private const val KEY_LAST_PENDING = "last_pending"
         private const val KEY_PAYMENT_TEXT = "payment_text"
+        private const val KEY_INVOICE_CLOSING = "invoice_closing"
         private const val KEY_KEY_SIZE = "key_size"
         private const val KEY_DASHBOARD_URL = "dashboard_url"
         private const val KEY_OVERLAY_ENABLED = "overlay_enabled"
