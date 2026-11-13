@@ -4,22 +4,22 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light dark">
-<meta name="theme-color" content="#6D28D9">
+<meta name="theme-color" content="#15803D">
 <title>Dashboard Web — SAMAQU Keyboard</title>
 <style>
   /* ---------------------------------------------------------------- tokens */
   :root{
-    --brand:#7C3AED; --brand-dark:#5B21B6; --brand-soft:#F1EBFE; --accent:#16A34A;
-    --bg:#F4F3FA; --card:#FFFFFF; --text:#1B1B2F; --muted:#6B7280;
-    --line:#E6E4F0; --field:#FFFFFF; --danger:#DC2626; --danger-soft:#FEF0F0;
-    --shadow:0 1px 2px rgba(20,16,50,.05), 0 10px 30px rgba(20,16,50,.06);
+    --brand:#15803D; --brand-dark:#166534; --brand-ink:#15803D; --brand-soft:#E6F4EA; --accent:#15803D;
+    --bg:#F2F6F3; --card:#FFFFFF; --text:#14201A; --muted:#5E6F65;
+    --line:#E0E8E2; --field:#FFFFFF; --danger:#DC2626; --danger-soft:#FEF0F0;
+    --shadow:0 1px 2px rgba(12,32,20,.05), 0 10px 30px rgba(12,32,20,.06);
     --radius:16px;
   }
   @media (prefers-color-scheme: dark){
     :root{
-      --brand:#9B6DFF; --brand-dark:#7C3AED; --brand-soft:#2A2150; --accent:#22C55E;
-      --bg:#0F0E18; --card:#181729; --text:#ECEBF7; --muted:#A3A1BD;
-      --line:#2B2945; --field:#1F1D35; --danger:#F87171; --danger-soft:#3A1F27;
+      --brand:#16A34A; --brand-dark:#15803D; --brand-ink:#4ADE80; --brand-soft:#16301F; --accent:#16A34A;
+      --bg:#0D1310; --card:#141C17; --text:#E7F0EA; --muted:#9DB0A3;
+      --line:#25322A; --field:#1A241E; --danger:#F87171; --danger-soft:#3A1F27;
       --shadow:none;
     }
   }
@@ -33,7 +33,7 @@
 
   /* ---------------------------------------------------------------- top bar */
   header{
-    background:linear-gradient(120deg,#7C3AED 0%,#5B21B6 100%);
+    background:linear-gradient(120deg,#15803D 0%,#14532D 100%);
     color:#fff; padding:18px 16px; padding-top:max(18px, env(safe-area-inset-top));
   }
   .top{max-width:1120px; margin:0 auto; display:flex; align-items:center; gap:14px}
@@ -84,7 +84,7 @@
     min-width:22px; padding:1px 7px; border-radius:999px; text-align:center;
     font-size:12px; font-weight:700; background:var(--line); color:var(--muted);
   }
-  .chip:hover{border-color:var(--brand)}
+  .chip:hover{border-color:var(--brand-ink)}
   .chip:active{transform:scale(.98)}
   .chip.on{background:var(--brand); border-color:var(--brand); color:#fff; font-weight:600}
   .chip.on .count{background:rgba(255,255,255,.24); color:#fff}
@@ -102,10 +102,10 @@
     transition:background .15s, border-color .15s, opacity .15s, transform .1s;
   }
   button:active:not(:disabled){transform:scale(.98)}
-  button:focus-visible,.chip:focus-visible{outline:2px solid var(--brand); outline-offset:2px}
+  button:focus-visible,.chip:focus-visible{outline:2px solid var(--brand-ink); outline-offset:2px}
   .btn{background:var(--brand); color:#fff}
   .btn:hover:not(:disabled){background:var(--brand-dark)}
-  .btn.ghost{background:transparent; color:var(--brand); border-color:var(--brand)}
+  .btn.ghost{background:transparent; color:var(--brand-ink); border-color:var(--brand-ink)}
   .btn.ghost:hover:not(:disabled){background:var(--brand-soft)}
   .btn.good{background:var(--accent); color:#fff}
   .btn.good:hover:not(:disabled){filter:brightness(.93)}
@@ -124,7 +124,7 @@
   }
   textarea{min-height:92px; resize:vertical; line-height:1.5}
   textarea::placeholder,input::placeholder{color:var(--muted); opacity:.8}
-  textarea:focus,input:focus{outline:2px solid var(--brand); outline-offset:-1px; border-color:var(--brand)}
+  textarea:focus,input:focus{outline:2px solid var(--brand-ink); outline-offset:-1px; border-color:var(--brand-ink)}
   #formCat{display:none; margin-top:12px}
 
   /* the form for a new or edited template sits above the list, like a composer */
@@ -143,12 +143,12 @@
     background:var(--card); border:1px solid var(--line); border-radius:13px;
     padding:14px 14px 6px; transition:border-color .15s, box-shadow .15s;
   }
-  .tpl:hover{border-color:var(--brand); box-shadow:0 4px 16px rgba(124,58,237,.10)}
+  .tpl:hover{border-color:var(--brand-ink); box-shadow:0 4px 16px rgba(21,128,61,.12)}
   .tpl .txt{white-space:pre-wrap; word-break:break-word; font-size:14.5px; margin:0}
   .tpl .acts{display:flex; justify-content:flex-end; gap:2px; border-top:1px solid var(--line); padding-top:4px; margin-top:6px}
   .tpl .acts button{background:none; border:0; padding:8px 12px; font-size:13px; min-height:38px; border-radius:9px}
   .tpl .acts button:hover{background:var(--bg)}
-  .acts .e{color:var(--brand)} .acts .d{color:var(--danger)}
+  .acts .e{color:var(--brand-ink)} .acts .d{color:var(--danger)}
 
   .empty{
     grid-column:1/-1; color:var(--muted); font-size:14px; text-align:center; padding:30px 12px;
